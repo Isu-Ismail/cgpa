@@ -3,13 +3,14 @@
   import { templateStore } from '../store/templateStore.js';
   import ConfirmModal from './ConfirmModal.svelte';
   import Logo from './Logo.svelte';
-  import { ScanLine, Sliders, FolderOpen, Target, RotateCcw, FileJson, Download } from 'lucide-svelte';
+  import { ScanLine, Sliders, FolderOpen, Target, RotateCcw, FileJson, Download, HelpCircle } from 'lucide-svelte';
 
   let { 
     onOpenOcr = () => {},
     onOpenScale = () => {},
     onOpenTemplates = () => {},
-    onOpenTarget = () => {}
+    onOpenTarget = () => {},
+    onOpenWelcome = () => {}
   } = $props();
 
   let isResetConfirmOpen = $state(false);
@@ -44,19 +45,24 @@
 <header class="w-full bg-[#FAF7EE] border-b-2 sm:border-b-3 border-black sticky top-0 z-30 px-3 sm:px-6 py-2 shadow-xs">
   <div class="max-w-7xl mx-auto flex flex-row items-center justify-between gap-2">
     
-    <!-- Logo & Title -->
-    <div class="flex items-center gap-2.5 shrink-0">
-      <Logo size="md" class="rotate-[-2deg]" />
+    <!-- Clickable Logo & Title (Click to open Welcome Guide) -->
+    <button 
+      onclick={onOpenWelcome}
+      class="flex items-center gap-2.5 shrink-0 group text-left cursor-pointer focus:outline-none"
+      title="Click to open Welcome & Feature Guide"
+    >
+      <Logo size="md" class="rotate-[-2deg] group-hover:scale-105 transition-transform" />
       <div>
         <div class="flex items-center gap-1.5">
-          <h1 class="font-display font-black text-lg sm:text-2xl tracking-tight text-black flex items-center gap-1">
+          <h1 class="font-display font-black text-lg sm:text-2xl tracking-tight text-black flex items-center gap-1 group-hover:underline">
             Neo<span class="bg-[#FF8E3C] px-1 py-0.2 border border-black shadow-[1.5px_1.5px_0px_0px_#000] text-white">CGPA</span>
           </h1>
           <span class="neo-badge bg-[#86EFAC] text-black font-black text-[9px] sm:text-[10px] py-0 px-1">v2.0</span>
+          <HelpCircle class="w-4 h-4 text-zinc-500 group-hover:text-black transition-colors" />
         </div>
         <p class="text-[10px] sm:text-[11px] font-mono font-semibold text-zinc-600 hidden sm:block">Compact Retro GPA Calculator</p>
       </div>
-    </div>
+    </button>
 
     <!-- Quick Action Toolbar (Scrollable & Icon-Only on Mobile!) -->
     <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto max-w-full py-0.5 no-scrollbar whitespace-nowrap">

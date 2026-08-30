@@ -8,6 +8,7 @@
   import ScaleSettingsModal from './components/ScaleSettingsModal.svelte';
   import TemplateManagerModal from './components/TemplateManagerModal.svelte';
   import TargetGpaModal from './components/TargetGpaModal.svelte';
+  import WelcomeModal from './components/WelcomeModal.svelte';
   import { Plus, ScanLine, Sparkles, FolderOpen } from 'lucide-svelte';
 
   // Modal visibility states
@@ -17,6 +18,19 @@
   let isScaleOpen = $state(false);
   let isTemplatesOpen = $state(false);
   let isTargetOpen = $state(false);
+  let isWelcomeOpen = $state(false);
+
+  // Auto-open Welcome Guide modal on first visit if not dismissed in cache
+  $effect(() => {
+    try {
+      const dismissed = localStorage.getItem('neocgpa_tutorial_dismissed');
+      if (!dismissed) {
+        isWelcomeOpen = true;
+      }
+    } catch (e) {
+      console.error('LocalStorage read error', e);
+    }
+  });
 
   function handleOpenOcr(semesterId = null, file = null) {
     targetSemesterForOcr = semesterId;
@@ -62,6 +76,7 @@
     onOpenScale={() => isScaleOpen = true}
     onOpenTemplates={() => isTemplatesOpen = true}
     onOpenTarget={() => isTargetOpen = true}
+    onOpenWelcome={() => isWelcomeOpen = true}
   />
 
   <!-- Main Workspace Container -->
@@ -118,18 +133,16 @@
           Start by creating your first semester, loading a template, or pasting a marksheet screenshot with Ctrl+V.
         </p>
 
-        <div class="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+        <div class="pt-2 flex flex-wrap items-center justify-center gap-3">
           <button 
             onclick={handleAddSemester}
-            class="neo-btn bg-[#FFDE59] text-black px-4 py-2 text-xs font-black flex items-center gap-1.5"
+            class="neo-btn bg-[#FFDE59] text-black font-black text-xs px-4 py-2"
           >
-            <Plus class="w-4 h-4 stroke-[3]" />
-            <span>Create Semester 1</span>
+            + Create Semester 1
           </button>
-
           <button 
             onclick={() => isTemplatesOpen = true}
-            class="neo-btn bg-[#38BDF8] text-black px-3.5 py-2 text-xs font-bold flex items-center gap-1.5"
+            class="neo-btn bg-[#38BDF8] text-black font-black text-xs px-4 py-2 flex items-center gap-1.5"
           >
             <FolderOpen class="w-4 h-4" />
             <span>Template Config Manager</span>
@@ -137,45 +150,28 @@
         </div>
       </div>
     {:else}
-      <div class="space-y-5">
-        {#each $semestersWithStats as semester (semester.id)}
+      <div class="space-y-6">
+        {#each $semestersWithStats as semester, index (semester.id)}
           <SemesterCard 
-            {semester}
+            {semester} 
+            semesterIndex={index} 
             onOpenOcrForSemester={(semId) => handleOpenOcr(semId, null)}
           />
         {/each}
       </div>
-
-      <!-- Add Another Semester Bottom Button -->
-      <div class="mt-6 flex justify-center">
-        <button 
-          onclick={handleAddSemester}
-          class="neo-btn bg-[#FFDE59] text-black px-5 py-2.5 text-xs font-black flex items-center gap-2 shadow-brutal hover:shadow-brutal-lg"
-        >
-          <Plus class="w-4 h-4 stroke-[3]" />
-          <span>Add Another Semester</span>
-        </button>
-      </div>
     {/if}
 
-    <!-- Help Banner -->
-    <div class="mt-10 neo-box bg-[#FFF4B8] p-4 flex flex-col md:flex-row items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 bg-black text-[#FFDE59] border-2 border-black flex items-center justify-center font-display font-black text-lg shadow-[1.5px_1.5px_0px_0px_#000]">
-          💡
-        </div>
-        <div>
-          <h4 class="font-display font-black text-sm text-black">Pasting & Exporting Pro Tips</h4>
-          <p class="text-xs font-mono text-zinc-700">
-            • Press <kbd class="bg-white px-1 border border-black font-bold">Ctrl + V</kbd> anywhere to paste a marksheet screenshot directly from your clipboard!
-            • Click <strong>Export Template JSON</strong> to save a clean scheme without grades to share with friends.
-          </p>
-        </div>
+    <!-- Bottom Actions Toolbar -->
+    <div class="mt-8 flex flex-wrap items-center justify-between gap-4 p-4 neo-box bg-[#FAF7EE]">
+      <div class="text-xs font-mono text-zinc-700">
+        <strong class="text-black">Pasting & Exporting Pro Tips:</strong><br />
+        • Press <kbd class="neo-kbd">Ctrl + V</kbd> anywhere to paste a marksheet screenshot directly from your clipboard!<br />
+        • Click <strong class="text-black">Export Data</strong> to backup your full workspace with grades saved.
       </div>
 
       <button 
         onclick={() => isTemplatesOpen = true}
-        class="neo-btn bg-[#86EFAC] text-black px-3.5 py-1.5 text-xs font-black shrink-0 flex items-center gap-1.5"
+        class="neo-btn bg-[#86EFAC] text-black font-black text-xs px-4 py-2 flex items-center gap-1.5 ml-auto"
       >
         <Sparkles class="w-3.5 h-3.5" />
         <span>Templates & Config JSON</span>
@@ -185,6 +181,11 @@
   </main>
 
   <!-- Modals -->
+  <WelcomeModal 
+    isOpen={isWelcomeOpen}
+    onClose={() => isWelcomeOpen = false}
+  />
+
   <ImageUploadModal 
     isOpen={isOcrOpen}
     initialSemesterId={targetSemesterForOcr}
@@ -210,7 +211,9 @@
   <!-- Footer -->
   <footer class="bg-[#FAF7EE] border-t-2.5 border-black py-3.5 px-6 mt-10 text-center text-xs font-mono font-bold text-zinc-600">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-      <span>⚡ NeoCGPA Calculator — Built with Svelte, Vite & TailwindCSS</span>
+      <button onclick={() => isWelcomeOpen = true} class="hover:underline flex items-center gap-1">
+        <span>⚡ NeoCGPA Calculator — Built with Svelte, Vite & TailwindCSS</span>
+      </button>
       <span class="bg-black text-[#86EFAC] px-2 py-0.5 border border-black">Clipboard Direct Paste Enabled</span>
     </div>
   </footer>
