@@ -1,5 +1,5 @@
 import { writable, derived } from 'svelte/store';
-import { DEFAULT_GRADE_POINTS, INITIAL_SEMESTERS } from '../types/defaults.js';
+import { DEFAULT_GRADE_POINTS } from '../types/defaults.js';
 import { calculateSemesterStats, calculateOverallCGPA } from '../utils/gpaCalculator.js';
 
 const STORAGE_KEY = 'neogpa_workspace_v2';
@@ -11,7 +11,7 @@ function getDefaultWorkspace() {
     templateDescription: '',
     maxGpa: 10,
     gradePoints: { ...DEFAULT_GRADE_POINTS },
-    semesters: JSON.parse(JSON.stringify(INITIAL_SEMESTERS))
+    semesters: [] // Reset clears all semesters to show the clean landing state
   };
 }
 
@@ -278,7 +278,7 @@ function createGpaStore() {
         return persist(newState);
       });
     },
-    // Reset to default
+    // Reset to default empty state
     resetAll: () => {
       const fresh = getDefaultWorkspace();
       set(persist(fresh));

@@ -2,6 +2,7 @@
   import { gpaStore } from '../store/gpaStore.js';
   import { templateStore } from '../store/templateStore.js';
   import ConfirmModal from './ConfirmModal.svelte';
+  import Logo from './Logo.svelte';
   import { ScanLine, Sliders, FolderOpen, Target, RotateCcw, FileJson, Download } from 'lucide-svelte';
 
   let { 
@@ -44,10 +45,8 @@
   <div class="max-w-7xl mx-auto flex flex-row items-center justify-between gap-2">
     
     <!-- Logo & Title -->
-    <div class="flex items-center gap-2 shrink-0">
-      <div class="w-8 h-8 sm:w-9 sm:h-9 bg-[#FFDE59] border-2 border-black shadow-brutal-sm flex items-center justify-center font-display font-black text-base sm:text-lg rotate-[-3deg]">
-        ⚡
-      </div>
+    <div class="flex items-center gap-2.5 shrink-0">
+      <Logo size="md" class="rotate-[-2deg]" />
       <div>
         <div class="flex items-center gap-1.5">
           <h1 class="font-display font-black text-lg sm:text-2xl tracking-tight text-black flex items-center gap-1">
