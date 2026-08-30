@@ -1,8 +1,8 @@
 import { createWorker } from 'tesseract.js';
 
 /**
- * Preprocess image with smart inversion of dark background cells (e.g. Grade column in portal tables)
- * so white text on dark purple/magenta becomes dark text on light background for Tesseract.
+ * High-Precision Image Preprocessor
+ * Restores contrast-enhanced preprocessing with targeted dark magenta box inversion for student portal tables.
  */
 export async function preprocessImage(imageSource) {
   return new Promise((resolve, reject) => {
@@ -12,23 +12,25 @@ export async function preprocessImage(imageSource) {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
-      const scale = Math.max(1, 2200 / Math.max(img.width, img.height));
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
+      // 1. High Resolution Scaling (target 2400px width/height for maximum text clarity)
+      const scale = Math.max(1, 2400 / Math.max(img.width, img.height));
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
 
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
+      const len = data.length;
 
-      for (let i = 0; i < data.length; i += 4) {
+      for (let i = 0; i < len; i += 4) {
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
         const gray = 0.299 * r + 0.587 * g + 0.114 * b;
 
-        // Detect dark purple/magenta background cells (Grade column in Anna Univ portal)
-        const isDarkMagentaOrDarkBox = (r > 60 && g < 75 && b > 25) || (gray < 115 && r > g + 15);
+        // Detect dark purple/magenta background cells (Portal table grade column: r > 60, b > 25, g < 75)
+        const isDarkMagentaOrDarkBox = (r > 60 && g < 75 && b > 25) || (gray < 110 && r > g + 15);
 
         if (isDarkMagentaOrDarkBox) {
           // Invert dark box: White grade letters (B+, A, S) become solid black text on light background!
@@ -36,7 +38,7 @@ export async function preprocessImage(imageSource) {
           data[i + 1] = 255 - g;
           data[i + 2] = 255 - b;
         } else {
-          // Crisp contrast for dark text on white/light background
+          // Crisp contrast enhancement for standard paper marksheets and light portal cells
           const factor = 1.35;
           let adjusted = factor * (gray - 128) + 128;
           adjusted = Math.min(255, Math.max(0, adjusted));
@@ -61,7 +63,7 @@ export async function preprocessImage(imageSource) {
 }
 
 /**
- * Clean course title to strip unclosed or stray brackets like [, ], (, ), []
+ * Clean course title to strip unclosed or stray brackets, trailing punctuation, and 1-2 character OCR noise tokens
  */
 export function cleanCourseTitle(title) {
   if (!title) return '';
@@ -71,18 +73,15 @@ export function cleanCourseTitle(title) {
   // Remove empty brackets like [], [ ], (), ( )
   cleaned = cleaned.replace(/\[\s*\]/g, '').replace(/\(\s*\)/g, '');
 
-  // Check for unclosed square brackets '['
+  // Remove unclosed '[' or ']' or '(' or ')'
   let openSquare = (cleaned.match(/\[/g) || []).length;
   let closeSquare = (cleaned.match(/\]/g) || []).length;
   if (openSquare > closeSquare) {
-    // Remove trailing or unclosed '['
     cleaned = cleaned.replace(/\[(?![^]*\])/g, '');
   } else if (closeSquare > openSquare) {
-    // Remove stray ']'
     cleaned = cleaned.replace(/\](?![^]*\[)/g, '');
   }
 
-  // Check for unclosed parentheses '('
   let openParen = (cleaned.match(/\(/g) || []).length;
   let closeParen = (cleaned.match(/\)/g) || []).length;
   if (openParen > closeParen) {
@@ -91,10 +90,25 @@ export function cleanCourseTitle(title) {
     cleaned = cleaned.replace(/\)(?![^]*\()/g, '');
   }
 
-  // Strip remaining standalone stray brackets
-  cleaned = cleaned.replace(/^[\[\]\(\)]+|[\[\]\(\)]+$/g, '');
-  cleaned = cleaned.replace(/\s+/g, ' ').replace(/^[,.-]+|[,.-]+$/g, '').trim();
+  // Strip standalone stray brackets and trailing apostrophes/quotes
+  cleaned = cleaned.replace(/^[\[\]\(\)'`",.-]+|[\[\]\(\)'`",.-]+$/g, '');
 
+  // Strip trailing 1-2 letter OCR noise tokens (e.g. 's', 'ge', 'Pp', 'ey', 'a0', 'Ss', 'BEN', 'as', 'i')
+  // preserving valid Roman numerals (I, II, III, IV, V, VI)
+  const validRoman = /^(I|II|III|IV|V|VI)$/i;
+  let words = cleaned.split(/\s+/);
+  while (words.length > 1) {
+    const lastWord = words[words.length - 1];
+    if (lastWord.length <= 3 && !validRoman.test(lastWord) && /^[A-Za-z0-9,.'`-]+$/.test(lastWord)) {
+      if (lastWord.toLowerCase() !== 'lab' && lastWord.toLowerCase() !== 'ii') {
+        words.pop();
+        continue;
+      }
+    }
+    break;
+  }
+
+  cleaned = words.join(' ').replace(/\s+/g, ' ').replace(/^[,.'`-]+|[,.'`-]+$/g, '').trim();
   return cleaned;
 }
 
@@ -137,8 +151,96 @@ export async function scanMarksheetImage(imageFile, onProgress = () => {}) {
 }
 
 /**
+ * Extract Grade, Credits, and Course Name by strict right-to-left token popping
+ * Works for both paper mark sheets and student portal tables with 8 assessment columns!
+ */
+function parseRowRightTokens(tokens) {
+  let detectedGrade = '';
+  let detectedCredits = '';
+
+  const rightTokens = [...tokens];
+  const validGrades = ['O', 'S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E', 'F', 'U', 'RA', 'AB', 'SA', 'W'];
+
+  // STEP 1: Inspect the rightmost 1-2 tokens strictly for Grade
+  // Check two adjacent tokens at far right first (e.g. "B" and "+" => "B+", "A" and "+" => "A+")
+  if (rightTokens.length >= 2) {
+    const last2 = (rightTokens[rightTokens.length - 2] + rightTokens[rightTokens.length - 1]).replace(/[^A-Za-z0-9+]/g, '').toUpperCase();
+    if (validGrades.includes(last2)) {
+      detectedGrade = last2;
+      rightTokens.pop();
+      rightTokens.pop();
+    }
+  }
+
+  // Check single rightmost token if not matched yet
+  if (!detectedGrade && rightTokens.length >= 1) {
+    const rawLast = rightTokens[rightTokens.length - 1];
+    const last1Clean = rawLast.replace(/[^A-Za-z0-9+]/g, '').toUpperCase();
+    
+    // High Priority 1: Check for explicit plus grades (A+, B+, C+, D+)
+    const plusMatch = last1Clean.match(/^(A\+|B\+|C\+|D\+)/i) || rawLast.match(/([A-D]\s*\+)/i);
+    if (plusMatch) {
+      detectedGrade = `${plusMatch[1].toUpperCase().replace('+', '')}+`;
+      rightTokens.pop();
+    } else {
+      // High Priority 2: Pencil tick recovery (e.g. "B," or "B'" or "B." or "A," or "A'" -> B+ and A+)
+      if (/^[AB][,.'`"v+\\/-]+$/i.test(rawLast) || /^[AB][,.'`"v+\\/-]$/i.test(rawLast)) {
+        detectedGrade = `${rawLast[0].toUpperCase()}+`;
+        rightTokens.pop();
+      } else {
+        // Strip trailing pencil checkmarks (e.g. "B+v" -> "B+", "Sv" -> "S", "Av" -> "A")
+        const stripped = last1Clean.replace(/^(O|S|A\+|A|B\+|B|C\+|C|D\+|D|E|F|U|RA|AB|SA|W)[A-Z\/\.\\,-]+$/i, '$1');
+        if (validGrades.includes(stripped)) {
+          detectedGrade = stripped;
+          rightTokens.pop();
+        } else {
+          const matchExact = last1Clean.match(/^(O|S|A|B|C|D|E|F|U|RA|AB|SA|W)$/i);
+          if (matchExact) {
+            detectedGrade = matchExact[1].toUpperCase();
+            rightTokens.pop();
+          }
+        }
+      }
+    }
+  }
+
+  // STEP 2: Inspect remaining rightmost token for Credits (if explicit paper credits column exists)
+  if (rightTokens.length >= 1) {
+    const lastTok = rightTokens[rightTokens.length - 1];
+    const cleanNum = lastTok.replace(/[^0-9]/g, '');
+    if (cleanNum && /^\d+$/.test(cleanNum)) {
+      const cVal = parseInt(cleanNum, 10);
+      if (cVal >= 1 && cVal <= 12) {
+        detectedCredits = cVal;
+        rightTokens.pop(); // Remove credit token cleanly!
+      }
+    }
+  }
+
+  // STEP 3: Remaining rightTokens form the Course Name
+  // Filter out assessment scores (16, 76, 100, 1=+, &8, 3€) and table header tokens
+  const nameTokens = [];
+  for (let t = 0; t < rightTokens.length; t++) {
+    const tok = rightTokens[t];
+    // As soon as a token is purely numeric or assessment score noise (e.g. 16, 76, 100, 1=+, &8, 3€), stop course name!
+    if (/^\d+$/.test(tok) || /^[\d.%=+\&\#€-]+$/.test(tok)) {
+      break;
+    }
+    if (/^(sl\.no|sl|no|s\.no|course|code|name|credits|grade|att|assess|att\.\(%\)|i\.assess|\*\*\*|end|statement)$/i.test(tok)) {
+      continue;
+    }
+    nameTokens.push(tok);
+  }
+
+  const courseName = cleanCourseTitle(nameTokens.join(' ').trim());
+
+  return { detectedGrade, detectedCredits, courseName };
+}
+
+/**
  * Intelligent Academic Marksheet & Portal Table Parser
  * Extract course codes, titles, grades, and optional credits cleanly from official sheets & portal screenshots.
+ * Supports up to 15+ subjects per semester!
  */
 export function parseMarksheetText(rawText) {
   const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
@@ -183,8 +285,7 @@ export function parseMarksheetText(rawText) {
     if (regMatch && !metadata.regulation) metadata.regulation = regMatch[1].trim();
   }
 
-  const validGrades = ['O', 'S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E', 'F', 'U', 'RA', 'AB', 'SA', 'W'];
-
+  // Support up to 15+ subjects per semester
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const tokens = line.split(/\s+/);
@@ -195,8 +296,8 @@ export function parseMarksheetText(rawText) {
       let rawTok = tokens[t];
       let tok = rawTok.replace(/[^A-Za-z0-9]/g, '');
 
-      // 1. Strip leading single digit or dot if attached (e.g. '9SD23C01' -> 'SD23C01')
-      tok = tok.replace(/^[0-9]\.?(?=[A-Za-z]{2})/i, '');
+      // 1. Strip 1 or 2 leading serial number digits or dots if attached (e.g. '9SD23C01' -> 'SD23C01', '15PR23S01' -> 'PR23S01')
+      tok = tok.replace(/^[0-9]{1,2}\.?(?=[A-Za-z]{2})/i, '');
 
       // 2. Fix common OCR misreads at prefix
       tok = tok.replace(/^5D/i, 'SD')
@@ -210,14 +311,15 @@ export function parseMarksheetText(rawText) {
                .replace(/^P1/i, 'PH')
                .replace(/^A1/i, 'AE')
                .replace(/^U1/i, 'UC')
-               .replace(/^M3/i, 'ME');
+               .replace(/^M3/i, 'ME')
+               .replace(/^JC/i, 'UC'); // UC23U01 misread as JC23U01
 
       // 3. Fix letter O vs zero at suffix
       tok = tok.replace(/C[O|o](\d{1,2})$/i, 'C0$1')
                .replace(/S[O|o](\d{1,2})$/i, 'S0$1')
                .replace(/U[O|o](\d{1,2})$/i, 'U0$1');
 
-      // 4. Robust Course Code Matcher
+      // 4. Robust Course Code Matcher (2..4 letters + 3..5 numbers/alphanumerics)
       if (/^[A-Z]{2,4}[0-9A-Z]{3,5}$/i.test(tok) && /\d/.test(tok) && tok.length >= 5 && tok.length <= 8) {
         codeMatch = tok.toUpperCase();
         codeIndex = t;
@@ -239,66 +341,10 @@ export function parseMarksheetText(rawText) {
     }
 
     if (codeMatch) {
-      let detectedGrade = '';
-      let detectedCredits = '';
-
       const rightTokens = codeIndex >= 0 ? tokens.slice(codeIndex + 1) : tokens;
+      const parsedRow = parseRowRightTokens(rightTokens);
 
-      // Scan rightmost tokens for Grade (e.g. A+, A, B+, S, O)
-      for (let r = rightTokens.length - 1; r >= 0; r--) {
-        let cleanTok = rightTokens[r].replace(/[^A-Za-z0-9+]/g, '').toUpperCase();
-
-        // Normalize common OCR grade misreads
-        if (cleanTok === 'A1' || cleanTok === 'A+') cleanTok = 'A+';
-        else if (cleanTok === 'B1' || cleanTok === 'B+') cleanTok = 'B+';
-        else if (cleanTok === 'C1' || cleanTok === 'C+') cleanTok = 'C+';
-        else if (cleanTok === '5' && rightTokens[r].length <= 2) cleanTok = 'S';
-
-        if (!detectedGrade && validGrades.includes(cleanTok)) {
-          detectedGrade = cleanTok;
-          rightTokens.splice(r, 1);
-          continue;
-        }
-
-        // Extract Grade embedded inside punctuation or trailing tokens
-        if (!detectedGrade) {
-          const matchGrade = rightTokens[r].match(/\b(A\+|B\+|C\+|D\+|[O|S|A|B|C|D|E|F|U]|RA|AB)\b/i);
-          if (matchGrade) {
-            detectedGrade = matchGrade[1].toUpperCase();
-            rightTokens.splice(r, 1);
-            continue;
-          }
-        }
-
-        // ONLY extract numeric credits if table header explicitly contains a Credits column!
-        if (hasCreditsColumn && detectedCredits === '' && /^\d(\.\d)?$/.test(cleanTok)) {
-          const cVal = parseFloat(cleanTok);
-          if (cVal >= 0 && cVal <= 20) {
-            detectedCredits = cVal;
-            rightTokens.splice(r, 1);
-            continue;
-          }
-        }
-      }
-
-      // Fallback: If Grade was not found in right tokens, search entire line
-      if (!detectedGrade) {
-        const lineGradeMatch = line.match(/\b(A\+|B\+|C\+|D\+|[O|S|A|B|C|D|E|F|U]|RA|AB)\b/i);
-        if (lineGradeMatch) {
-          detectedGrade = lineGradeMatch[1].toUpperCase();
-        }
-      }
-
-      // Filter remaining tokens for Course Name
-      const nameTokens = rightTokens.filter(t => {
-        if (/^[\d.%-]+$/.test(t)) return false;
-        if (/^(sl\.no|sl|no|course|code|name|credits|grade|att|assess|\*\*\*|end|statement)$/i.test(t)) return false;
-        return true;
-      });
-
-      let rawCourseName = nameTokens.join(' ').trim();
-      let courseName = cleanCourseTitle(rawCourseName);
-
+      let courseName = parsedRow.courseName;
       if (!courseName && i + 1 < lines.length) {
         const nextLine = lines[i + 1];
         if (!/^[A-Z]{2,4}[0-9A-Z]{3,5}$/i.test(nextLine)) {
@@ -306,22 +352,25 @@ export function parseMarksheetText(rawText) {
         }
       }
 
-      if (detectedCredits === '') {
-        if (hasCreditsColumn) {
-          detectedCredits = 3;
-        } else {
-          detectedCredits = '';
-        }
+      // If credits were parsed or if table header contains CREDITS
+      let finalCredits = parsedRow.detectedCredits;
+      if (finalCredits === '' && hasCreditsColumn) {
+        finalCredits = 3;
       }
 
       courses.push({
         id: `c-${Date.now()}-${courses.length + 1}`,
         code: codeMatch,
         name: courseName || `Course ${codeMatch}`,
-        credits: detectedCredits,
-        grade: detectedGrade || ''
+        credits: finalCredits,
+        grade: parsedRow.detectedGrade || ''
       });
     }
+  }
+
+  // If any row detected explicit credits, set hasCreditsColumn = true
+  if (!hasCreditsColumn && courses.some(c => c.credits !== '')) {
+    hasCreditsColumn = true;
   }
 
   return { metadata, hasCreditsColumn, courses };
