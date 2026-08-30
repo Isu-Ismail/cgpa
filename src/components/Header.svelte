@@ -10,24 +10,14 @@
     onOpenScale = () => {},
     onOpenTemplates = () => {},
     onOpenTarget = () => {},
-    onOpenWelcome = () => {}
+    onOpenWelcome = () => {},
+    onOpenExportModal = () => {}
   } = $props();
 
   let isResetConfirmOpen = $state(false);
 
   function handleExportCleanTemplate() {
     templateStore.exportAsCleanJson({
-      templateId: $gpaStore.templateId,
-      templateName: $gpaStore.templateName,
-      templateDesc: $gpaStore.templateDescription,
-      maxGpa: $gpaStore.maxGpa,
-      gradePoints: $gpaStore.gradePoints,
-      semesters: $gpaStore.semesters
-    });
-  }
-
-  function handleExportFullDataBackup() {
-    templateStore.exportAsFullUserDataJson({
       templateId: $gpaStore.templateId,
       templateName: $gpaStore.templateName,
       templateDesc: $gpaStore.templateDescription,
@@ -89,11 +79,11 @@
         <span class="neo-badge bg-white text-[9px] py-0 px-0.5 border font-mono font-bold">{$gpaStore.maxGpa}pt</span>
       </button>
 
-      <!-- Export Full Data JSON (WITH Grades) -->
+      <!-- Export Data (Opens Export Modal for PDF or JSON!) -->
       <button 
-        onclick={handleExportFullDataBackup}
+        onclick={onOpenExportModal}
         class="neo-btn bg-[#4ADE80] hover:bg-[#22c55e] text-black px-2 sm:px-2.5 py-1 text-xs font-black flex items-center gap-1 shrink-0"
-        title="Export Full Data with Grades for Backup & Restore"
+        title="Export Data as PDF Report or JSON Backup"
       >
         <Download class="w-3.5 h-3.5 stroke-[2.5]" />
         <span class="hidden md:inline">Export Data</span>

@@ -1,5 +1,6 @@
 <script>
-  import { gpaStore, semestersWithStats } from './store/gpaStore.js';
+  import { gpaStore, semestersWithStats, overallCgpa } from './store/gpaStore.js';
+  import { templateStore } from './store/templateStore.js';
   import Header from './components/Header.svelte';
   import QuickStats from './components/QuickStats.svelte';
   import SemesterSummary from './components/SemesterSummary.svelte';
@@ -9,7 +10,9 @@
   import TemplateManagerModal from './components/TemplateManagerModal.svelte';
   import TargetGpaModal from './components/TargetGpaModal.svelte';
   import WelcomeModal from './components/WelcomeModal.svelte';
-  import { Plus, ScanLine, Sparkles, FolderOpen } from 'lucide-svelte';
+  import ExportModal from './components/ExportModal.svelte';
+  import { generatePdfReport } from './utils/pdfGenerator.js';
+  import { Plus, ScanLine, Sparkles, FolderOpen, Download } from 'lucide-svelte';
 
   // Modal visibility states
   let isOcrOpen = $state(false);
@@ -19,6 +22,7 @@
   let isTemplatesOpen = $state(false);
   let isTargetOpen = $state(false);
   let isWelcomeOpen = $state(false);
+  let isExportOpen = $state(false);
 
   // Auto-open Welcome Guide modal on first visit if not dismissed in cache
   $effect(() => {
@@ -43,6 +47,25 @@
     setTimeout(() => {
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }, 100);
+  }
+
+  function handleExportJson() {
+    templateStore.exportAsFullUserDataJson({
+      templateId: $gpaStore.templateId,
+      templateName: $gpaStore.templateName,
+      templateDesc: $gpaStore.templateDescription,
+      maxGpa: $gpaStore.maxGpa,
+      gradePoints: $gpaStore.gradePoints,
+      semesters: $gpaStore.semesters
+    });
+  }
+
+  function handleExportPdf() {
+    generatePdfReport({
+      store: $gpaStore,
+      semestersWithStats: $semestersWithStats,
+      overallStats: $overallCgpa
+    });
   }
 
   // Global Clipboard Paste Listener (Ctrl + V for image marksheet)
@@ -77,6 +100,7 @@
     onOpenTemplates={() => isTemplatesOpen = true}
     onOpenTarget={() => isTargetOpen = true}
     onOpenWelcome={() => isWelcomeOpen = true}
+    onOpenExportModal={() => isExportOpen = true}
   />
 
   <!-- Main Workspace Container -->
@@ -166,16 +190,26 @@
       <div class="text-xs font-mono text-zinc-700">
         <strong class="text-black">Pasting & Exporting Pro Tips:</strong><br />
         • Press <kbd class="neo-kbd">Ctrl + V</kbd> anywhere to paste a marksheet screenshot directly from your clipboard!<br />
-        • Click <strong class="text-black">Export Data</strong> to backup your full workspace with grades saved.
+        • Click <strong class="text-black">Export Data</strong> to download as a clean PDF Report or backup your full JSON.
       </div>
 
-      <button 
-        onclick={() => isTemplatesOpen = true}
-        class="neo-btn bg-[#86EFAC] text-black font-black text-xs px-4 py-2 flex items-center gap-1.5 ml-auto"
-      >
-        <Sparkles class="w-3.5 h-3.5" />
-        <span>Templates & Config JSON</span>
-      </button>
+      <div class="flex items-center gap-2 ml-auto">
+        <button 
+          onclick={() => isExportOpen = true}
+          class="neo-btn bg-[#4ADE80] text-black font-black text-xs px-4 py-2 flex items-center gap-1.5"
+        >
+          <Download class="w-4 h-4 stroke-[2.5]" />
+          <span>Export Data (PDF / JSON)</span>
+        </button>
+
+        <button 
+          onclick={() => isTemplatesOpen = true}
+          class="neo-btn bg-[#86EFAC] text-black font-black text-xs px-4 py-2 flex items-center gap-1.5"
+        >
+          <Sparkles class="w-3.5 h-3.5" />
+          <span>Templates & Config JSON</span>
+        </button>
+      </div>
     </div>
 
   </main>
@@ -184,6 +218,13 @@
   <WelcomeModal 
     isOpen={isWelcomeOpen}
     onClose={() => isWelcomeOpen = false}
+  />
+
+  <ExportModal 
+    isOpen={isExportOpen}
+    onClose={() => isExportOpen = false}
+    onExportJson={handleExportJson}
+    onExportPdf={handleExportPdf}
   />
 
   <ImageUploadModal 
