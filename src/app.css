@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+@layer theme {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-display: 'Space Grotesk', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --color-neo-bg: #FAF7EE;
+    --color-neo-card: #FFFFFF;
+    --color-neo-yellow: #FFDE59;
+    --color-neo-yellow-light: #FFF4B8;
+    --color-neo-orange: #FF8E3C;
+    --color-neo-pink: #FF70A6;
+    --color-neo-purple: #C084FC;
+    --color-neo-violet: #8B5CF6;
+    --color-neo-cyan: #38BDF8;
+    --color-neo-blue: #4E71FF;
+    --color-neo-green: #4ADE80;
+    --color-neo-lime: #A3E635;
+    --color-neo-red: #FF4757;
+    --color-neo-black: #121212;
+    --color-neo-dark: #1E1E24;
+    --color-neo-border: #000000;
+  }
+}
+
+/* Balanced Neo-Brutalist Utility Classes */
+.neo-box {
+  background-color: #ffffff;
+  border: 2.5px solid #000000;
+  box-shadow: 3.5px 3.5px 0px 0px #000000;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.neo-box-sm {
+  border: 2px solid #000000;
+  box-shadow: 2px 2px 0px 0px #000000;
+}
+
+.neo-box-lg {
+  border: 3px solid #000000;
+  box-shadow: 5px 5px 0px 0px #000000;
+}
+
+.neo-box-xl {
+  border: 3.5px solid #000000;
+  box-shadow: 6px 6px 0px 0px #000000;
+}
+
+.neo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  border: 2px solid #000000;
+  box-shadow: 2.5px 2.5px 0px 0px #000000;
+  transition: all 0.08s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  cursor: pointer;
+}
+
+.neo-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3.5px 3.5px 0px 0px #000000;
+}
+
+.neo-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px 0px #000000;
+}
+
+/* Balanced input styling */
+.neo-input {
+  width: 100%;
+  border: 2px solid #000000;
+  background-color: #ffffff;
+  padding: 0.35rem 0.5rem;
+  font-weight: 600;
+  outline: none;
+  transition: all 0.1s ease;
+  box-shadow: 1.5px 1.5px 0px 0px rgba(0,0,0,0.15);
+}
+
+.neo-input:focus {
+  background-color: #fffde7;
+  border-color: #000000;
+  box-shadow: 2.5px 2.5px 0px 0px #000000;
+  outline: none;
+}
+
+.neo-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.725rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1.5px solid #000000;
+  box-shadow: 1.5px 1.5px 0px 0px #000000;
+}
+
+/* Hide number input spinners for clean look */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.bg-retro-dots {
+  background-color: #FAF7EE;
+  background-image: radial-gradient(#121212 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FAF7EE;
+  border-left: 2px solid #000000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #FFDE59;
+  border: 2px solid #000000;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #FF8E3C;
+}
