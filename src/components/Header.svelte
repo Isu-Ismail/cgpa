@@ -55,14 +55,6 @@
         </div>
       </button>
 
-      <!-- Mobile Quick Reset Icon Button -->
-      <button 
-        onclick={() => isResetConfirmOpen = true} 
-        class="sm:hidden neo-btn bg-white hover:bg-[#FF4757] hover:text-white text-zinc-700 p-1 text-xs shrink-0"
-        title="Reset workspace to default"
-      >
-        <RotateCcw class="w-3.5 h-3.5" />
-      </button>
     </div>
 
     <!-- Action Toolbar: Horizontally Scrollable Bar on Mobile / Single Row on PC -->
