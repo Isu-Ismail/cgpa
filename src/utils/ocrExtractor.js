@@ -2,7 +2,7 @@ import { createWorker } from 'tesseract.js';
 
 /**
  * High-Precision Image Preprocessor
- * Restores contrast-enhanced preprocessing with targeted dark magenta box inversion for student portal tables.
+ * Enhances contrast and selectively inverts dark magenta grade boxes for student portal tables.
  */
 export async function preprocessImage(imageSource) {
   return new Promise((resolve, reject) => {
@@ -162,7 +162,6 @@ function parseRowRightTokens(tokens) {
   const validGrades = ['O', 'S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E', 'F', 'U', 'RA', 'AB', 'SA', 'W'];
 
   // STEP 1: Inspect the rightmost 1-2 tokens strictly for Grade
-  // Check two adjacent tokens at far right first (e.g. "B" and "+" => "B+", "A" and "+" => "A+")
   if (rightTokens.length >= 2) {
     const last2 = (rightTokens[rightTokens.length - 2] + rightTokens[rightTokens.length - 1]).replace(/[^A-Za-z0-9+]/g, '').toUpperCase();
     if (validGrades.includes(last2)) {
@@ -222,7 +221,6 @@ function parseRowRightTokens(tokens) {
   const nameTokens = [];
   for (let t = 0; t < rightTokens.length; t++) {
     const tok = rightTokens[t];
-    // As soon as a token is purely numeric or assessment score noise (e.g. 16, 76, 100, 1=+, &8, 3€), stop course name!
     if (/^\d+$/.test(tok) || /^[\d.%=+\&\#€-]+$/.test(tok)) {
       break;
     }
@@ -240,7 +238,7 @@ function parseRowRightTokens(tokens) {
 /**
  * Intelligent Academic Marksheet & Portal Table Parser
  * Extract course codes, titles, grades, and optional credits cleanly from official sheets & portal screenshots.
- * Supports up to 15+ subjects per semester!
+ * Supports multiline wrapped titles and up to 15+ subjects per semester!
  */
 export function parseMarksheetText(rawText) {
   const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
@@ -254,7 +252,6 @@ export function parseMarksheetText(rawText) {
     regulation: ''
   };
 
-  // Explicit Credits column check
   let hasCreditsColumn = false;
 
   for (const line of lines) {
@@ -285,7 +282,7 @@ export function parseMarksheetText(rawText) {
     if (regMatch && !metadata.regulation) metadata.regulation = regMatch[1].trim();
   }
 
-  // Support up to 15+ subjects per semester
+  // Support up to 15+ subjects per semester with Multiline Title Continuation
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const tokens = line.split(/\s+/);
@@ -294,48 +291,66 @@ export function parseMarksheetText(rawText) {
 
     for (let t = 0; t < tokens.length; t++) {
       let rawTok = tokens[t];
-      let tok = rawTok.replace(/[^A-Za-z0-9]/g, '');
 
-      // 1. Strip 1 or 2 leading serial number digits or dots if attached (e.g. '9SD23C01' -> 'SD23C01', '15PR23S01' -> 'PR23S01')
-      tok = tok.replace(/^[0-9]{1,2}\.?(?=[A-Za-z]{2})/i, '');
+      // 1. Strip 1 or 2 leading serial number digits or dots if attached (e.g. '1CS23904' -> 'CS23904', '15PR23S01' -> 'PR23S01')
+      let codeTok = rawTok.replace(/^0?([0-9]{1,2})[\.\,\:\-]?/i, '').replace(/[^A-Za-z0-9]/g, '');
+      if (codeTok.length < 5) {
+        codeTok = rawTok.replace(/[^A-Za-z0-9]/g, '');
+      }
 
-      // 2. Fix common OCR misreads at prefix
-      tok = tok.replace(/^5D/i, 'SD')
-               .replace(/^S0/i, 'SD')
-               .replace(/^5S/i, 'SD')
-               .replace(/^E1/i, 'EI')
-               .replace(/^C1/i, 'CY')
-               .replace(/^G1/i, 'GE')
-               .replace(/^H1/i, 'HS')
-               .replace(/^M1/i, 'MA')
-               .replace(/^P1/i, 'PH')
-               .replace(/^A1/i, 'AE')
-               .replace(/^U1/i, 'UC')
-               .replace(/^M3/i, 'ME')
-               .replace(/^JC/i, 'UC'); // UC23U01 misread as JC23U01
+      // If preceding token was 'C' or '1C' and codeTok is 'S23904' -> restore 'CS23904'
+      if (/^S\d{5}$/i.test(codeTok)) {
+        if (t > 0 && /^(C|1C|1\s*C)$/i.test(tokens[t - 1])) {
+          codeTok = `C${codeTok}`;
+        } else {
+          codeTok = `C${codeTok}`; // Restore missing C prefix for CS23904
+        }
+      }
+
+      // 2. Fix common OCR misreads at prefix (including C5/C3 -> CS)
+      codeTok = codeTok.replace(/^C5/i, 'CS')
+                       .replace(/^C3/i, 'CS')
+                       .replace(/^5D/i, 'SD')
+                       .replace(/^S0/i, 'SD')
+                       .replace(/^5S/i, 'SD')
+                       .replace(/^E1/i, 'EI')
+                       .replace(/^C1/i, 'CY')
+                       .replace(/^G1/i, 'GE')
+                       .replace(/^H1/i, 'HS')
+                       .replace(/^M1/i, 'MA')
+                       .replace(/^P1/i, 'PH')
+                       .replace(/^A1/i, 'AE')
+                       .replace(/^U1/i, 'UC')
+                       .replace(/^M3/i, 'ME')
+                       .replace(/^JC/i, 'UC'); // UC23U01 / UC23LXX misread as JC23U01
 
       // 3. Fix letter O vs zero at suffix
-      tok = tok.replace(/C[O|o](\d{1,2})$/i, 'C0$1')
-               .replace(/S[O|o](\d{1,2})$/i, 'S0$1')
-               .replace(/U[O|o](\d{1,2})$/i, 'U0$1');
+      codeTok = codeTok.replace(/C[O|o](\d{1,2})$/i, 'C0$1')
+                       .replace(/S[O|o](\d{1,2})$/i, 'S0$1')
+                       .replace(/U[O|o](\d{1,2})$/i, 'U0$1');
 
-      // 4. Robust Course Code Matcher (2..4 letters + 3..5 numbers/alphanumerics)
-      if (/^[A-Z]{2,4}[0-9A-Z]{3,5}$/i.test(tok) && /\d/.test(tok) && tok.length >= 5 && tok.length <= 8) {
-        codeMatch = tok.toUpperCase();
-        codeIndex = t;
-        break;
+      // 4. Robust Course Code Matcher (2..4 letters + 3..7 numbers/alphanumerics, MUST contain at least 1 digit, length 5..10)
+      if (/^[A-Z]{2,4}[0-9A-Z]{3,7}$/i.test(codeTok) && /\d/.test(codeTok) && codeTok.length >= 5 && codeTok.length <= 10) {
+        if (!/^(COURSE|CREDIT|CREDITS|GRADE|THEORY|TITLE|RESULT|REGISTER|SEMESTER|STATEMENT|ANNA|UNIVERSITY)$/i.test(codeTok)) {
+          codeMatch = codeTok.toUpperCase();
+          codeIndex = t;
+          break;
+        }
       }
     }
 
-    // Fallback search in line
+    // Fallback search in line for codes like CS23904 / C523904 / UC23LXX (requires digit)
     if (!codeMatch) {
-      const lineCodeMatch = line.match(/\b([A-Z]{2,4}[0-9A-Z]{3,5})\b/i);
+      const lineCodeMatch = line.match(/\b([A-Z0-9]{5,10})\b/i);
       if (lineCodeMatch) {
         let candidate = lineCodeMatch[1].replace(/[^A-Za-z0-9]/g, '');
-        candidate = candidate.replace(/^5D/i, 'SD').replace(/^S0/i, 'SD').replace(/C[O|o](\d{1,2})$/i, 'C0$1');
-        if (/\d/.test(candidate) && candidate.length >= 5 && candidate.length <= 8) {
-          codeMatch = candidate.toUpperCase();
-          codeIndex = tokens.findIndex(t => t.includes(lineCodeMatch[1]));
+        if (/^S\d{5}$/i.test(candidate)) candidate = `C${candidate}`;
+        candidate = candidate.replace(/^C5/i, 'CS').replace(/^C3/i, 'CS').replace(/^5D/i, 'SD').replace(/^S0/i, 'SD').replace(/^JC/i, 'UC').replace(/C[O|o](\d{1,2})$/i, 'C0$1');
+        if (/\d/.test(candidate) && candidate.length >= 5 && candidate.length <= 10) {
+          if (!/^(COURSE|CREDIT|CREDITS|GRADE|THEORY|TITLE|RESULT|REGISTER|SEMESTER|STATEMENT|ANNA|UNIVERSITY)$/i.test(candidate)) {
+            codeMatch = candidate.toUpperCase();
+            codeIndex = tokens.findIndex(t => t.includes(lineCodeMatch[1]));
+          }
         }
       }
     }
@@ -345,12 +360,6 @@ export function parseMarksheetText(rawText) {
       const parsedRow = parseRowRightTokens(rightTokens);
 
       let courseName = parsedRow.courseName;
-      if (!courseName && i + 1 < lines.length) {
-        const nextLine = lines[i + 1];
-        if (!/^[A-Z]{2,4}[0-9A-Z]{3,5}$/i.test(nextLine)) {
-          courseName = cleanCourseTitle(nextLine);
-        }
-      }
 
       // If credits were parsed or if table header contains CREDITS
       let finalCredits = parsedRow.detectedCredits;
@@ -365,6 +374,19 @@ export function parseMarksheetText(rawText) {
         credits: finalCredits,
         grade: parsedRow.detectedGrade || ''
       });
+    } else {
+      // Multiline Title Continuation (e.g. 'COMPONENTS' or 'SYSTEMS EY' wrapping onto a new line)
+      if (courses.length > 0) {
+        const textTokens = tokens.filter(t => !/^\d+$/.test(t) && !/^(sl\.no|sl|no|s\.no|course|code|name|credits|grade|att|assess|\*\*\*|end|statement)$/i.test(t));
+        const extraText = cleanCourseTitle(textTokens.join(' '));
+        if (extraText && !/^(course|code|name|credits|grade|att|assess|end|statement|semester)/i.test(extraText)) {
+          const lastCourse = courses[courses.length - 1];
+          // Append continuation line to previous course title if title was cut short
+          if (lastCourse.name && !lastCourse.name.endsWith(extraText)) {
+            lastCourse.name = cleanCourseTitle(`${lastCourse.name} ${extraText}`);
+          }
+        }
+      }
     }
   }
 

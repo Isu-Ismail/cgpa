@@ -2,11 +2,12 @@
   import { gpaStore } from '../store/gpaStore.js';
   import CourseRow from './CourseRow.svelte';
   import ConfirmModal from './ConfirmModal.svelte';
-  import { Plus, Trash2, ScanLine, CheckCircle, AlertTriangle } from 'lucide-svelte';
+  import { Plus, Trash2, ScanLine, CheckCircle, AlertTriangle, Pencil, Layers } from 'lucide-svelte';
 
   let { 
     semester,
-    onOpenOcrForSemester = () => {}
+    onOpenOcrForSemester = () => {},
+    onAddSemester = () => {}
   } = $props();
 
   let isEditingTitle = $state(false);
@@ -47,7 +48,7 @@
     <!-- Title & Edit -->
     <div class="flex items-center gap-2 max-w-full overflow-hidden">
       <div class="w-6 h-6 sm:w-7 sm:h-7 bg-black text-[#FFDE59] border-2 border-black flex items-center justify-center font-mono font-black text-xs shadow-[1px_1px_0px_0px_#000] shrink-0">
-        §
+        <Layers class="w-3.5 h-3.5" />
       </div>
 
       {#if isEditingTitle}
@@ -71,7 +72,7 @@
           <h2 class="font-display font-black text-base sm:text-lg text-black group-hover:underline truncate max-w-[130px] sm:max-w-xs whitespace-nowrap overflow-hidden">
             {semester.name}
           </h2>
-          <span class="text-xs font-mono font-bold text-zinc-400 group-hover:text-black shrink-0">✎</span>
+          <Pencil class="w-3 h-3 text-zinc-400 group-hover:text-black shrink-0" />
         </button>
       {/if}
 
@@ -112,7 +113,7 @@
       <button 
         onclick={() => onOpenOcrForSemester(semester.id)}
         class="neo-btn bg-[#FF70A6] text-white px-2 py-1 text-xs font-bold flex items-center gap-1 shrink-0"
-        title="Scan marksheet image into this semester"
+        title="Scan marksheet image directly into {semester.name}"
       >
         <ScanLine class="w-3.5 h-3.5" />
         <span class="hidden md:inline">Scan Sheet</span>
@@ -182,18 +183,31 @@
     </table>
   </div>
 
-  <!-- Table Footer -->
-  <div class="bg-[#FAF7EE] border-t-2 border-black px-3.5 py-1.5 flex flex-wrap items-center justify-between text-xs font-mono font-semibold text-zinc-600 gap-2">
-    <div class="flex flex-wrap items-center gap-2">
+  <!-- Table Footer with Quick Add Semester Button -->
+  <div class="bg-[#FAF7EE] border-t-2 border-black px-3.5 py-2 flex flex-wrap items-center justify-between text-xs font-mono font-semibold text-zinc-600 gap-2">
+    <div class="hidden md:flex flex-wrap items-center gap-2">
       <span class="bg-white px-1.5 py-0.2 border border-black font-bold">Ctrl + ↑ ↓ ← →</span>
-      <span>Grid Navigate</span>
+      <span>Navigate</span>
       <span class="bg-white px-1.5 py-0.2 border border-black font-bold ml-1">Ctrl+Enter</span>
       <span>Insert</span>
       <span class="bg-white px-1.5 py-0.2 border border-black font-bold ml-1">Ctrl+Del</span>
-      <span>Delete</span>
+      <span>Delete Row</span>
     </div>
-    <div class="text-zinc-700 font-bold">
-      {(semester.totalQualityPoints || 0).toFixed(1)} / {semester.totalCredits || 0} = {sgpaFormatted}
+
+    <div class="flex items-center gap-3">
+      <div class="text-zinc-700 font-bold hidden sm:block">
+        {(semester.totalQualityPoints || 0).toFixed(1)} / {semester.totalCredits || 0} = {sgpaFormatted}
+      </div>
+
+      <!-- Add Semester Button at bottom of card -->
+      <button 
+        onclick={onAddSemester}
+        class="neo-btn bg-[#FFDE59] hover:bg-[#ffe600] text-black px-2.5 py-1 text-xs font-black flex items-center gap-1 shrink-0 shadow-[1.5px_1.5px_0px_0px_#000]"
+        title="Create another semester"
+      >
+        <Plus class="w-3.5 h-3.5 stroke-[3]" />
+        <span>Add Semester</span>
+      </button>
     </div>
   </div>
 

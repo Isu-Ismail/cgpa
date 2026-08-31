@@ -19,7 +19,8 @@
       colIndex,
       onAddRow,
       onInsertAfter: () => gpaStore.insertCourseAfter(semesterId, course.id),
-      onDeleteRow: () => gpaStore.removeCourse(semesterId, course.id)
+      onDeleteRow: () => gpaStore.removeCourse(semesterId, course.id),
+      onUndo: () => gpaStore.undo()
     });
   }
 

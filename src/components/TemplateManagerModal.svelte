@@ -3,7 +3,7 @@
   import { templateStore } from '../store/templateStore.js';
   import { fetchOnlineTemplates } from '../utils/firebaseService.js';
   import ConfirmModal from './ConfirmModal.svelte';
-  import { X, Search, Upload, Download, Trash2, Check, Copy, FolderCheck, FileJson, Cloud, RefreshCw } from 'lucide-svelte';
+  import { X, Search, Upload, Download, Trash2, Check, Copy, FolderCheck, FolderOpen, FileJson, Cloud, RefreshCw } from 'lucide-svelte';
 
   let { isOpen = false, onClose = () => {} } = $props();
 
@@ -173,7 +173,7 @@
       <div class="bg-[#38BDF8] border-b-3 border-black p-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 bg-black text-[#FFDE59] border-2 border-black flex items-center justify-center font-bold text-lg shadow-[2px_2px_0px_0px_#000]">
-            📁
+            <FolderOpen class="w-5 h-5" />
           </div>
           <div>
             <h3 class="font-display font-black text-xl text-black">Template Config & Cloud Manager</h3>
@@ -235,14 +235,15 @@
         <!-- Search bar for Online & Local tabs -->
         {#if activeTab === 'online' || activeTab === 'library'}
           <div class="relative flex items-center gap-2">
-            <div class="relative flex-1">
-              <Search class="w-5 h-5 text-black absolute left-3 top-1/2 -translate-y-1/2" />
+            <div class="relative flex-1 flex items-center">
+              <Search class="w-5 h-5 text-black absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none" />
               <input 
                 type="text" 
                 placeholder="Search templates (e.g. au, pt, 2023, aupt202316)..." 
                 bind:value={searchQuery}
                 oninput={loadOnlineTemplates}
-                class="neo-input pl-10 pr-4 py-2.5 text-sm font-semibold"
+                class="neo-input !pl-10 pr-4 py-2.5 text-sm font-semibold"
+                style="padding-left: 2.5rem !important;"
               />
             </div>
             {#if activeTab === 'online'}

@@ -3,7 +3,7 @@
  * Supports seamless grid navigation across text inputs, number inputs, and Grade select dropdowns!
  */
 
-export function handleGridKeyDown(event, { semesterId, rowIndex, colIndex, onAddRow, onInsertAfter, onDeleteRow }) {
+export function handleGridKeyDown(event, { semesterId, rowIndex, colIndex, onAddRow, onInsertAfter, onDeleteRow, onUndo }) {
   const { key, target, ctrlKey, metaKey } = event;
   const isCtrl = ctrlKey || metaKey;
   const isInput = target.tagName === 'INPUT' || target.tagName === 'SELECT';
@@ -39,8 +39,8 @@ export function handleGridKeyDown(event, { semesterId, rowIndex, colIndex, onAdd
     return;
   }
 
-  // Hotkey 2: Ctrl + Delete or Ctrl + Backspace -> Delete current row
-  if (isCtrl && (key === 'Delete' || key === 'Backspace')) {
+  // Hotkey 2: Ctrl + Delete -> Delete current row
+  if (isCtrl && key === 'Delete') {
     event.preventDefault();
     if (onDeleteRow) {
       onDeleteRow();
@@ -50,6 +50,15 @@ export function handleGridKeyDown(event, { semesterId, rowIndex, colIndex, onAdd
       }, 50);
     }
     return;
+  }
+
+  // Hotkey 3: Ctrl + Z -> Undo up to 5 steps back
+  if (isCtrl && key.toLowerCase() === 'z') {
+    if (isSelect || target.type === 'checkbox' || target.type === 'number') {
+      event.preventDefault();
+      if (onUndo) onUndo();
+      return;
+    }
   }
 
   // Hotkey 3: Ctrl + Arrow Keys (Forces Cell Navigation across ALL cells including Grade Select Dropdowns!)

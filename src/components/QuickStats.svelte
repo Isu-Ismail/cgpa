@@ -18,12 +18,12 @@
 
   let performanceRemark = $derived.by(() => {
     const ratio = $gpaStore.maxGpa > 0 ? $overallCgpa.cgpa / $gpaStore.maxGpa : 0;
-    if (ratio >= 0.9) return { text: 'OUTSTANDING ⭐', bg: 'bg-[#4ADE80]' };
-    if (ratio >= 0.8) return { text: 'EXCELLENT 🚀', bg: 'bg-[#86EFAC]' };
-    if (ratio >= 0.7) return { text: 'VERY GOOD ✨', bg: 'bg-[#38BDF8]' };
-    if (ratio >= 0.6) return { text: 'GOOD 👍', bg: 'bg-[#FFDE59]' };
-    if (ratio >= 0.5) return { text: 'AVERAGE 📈', bg: 'bg-[#FF8E3C]' };
-    return { text: 'IN PROGRESS ⏳', bg: 'bg-[#FF70A6]' };
+    if (ratio >= 0.9) return { text: 'OUTSTANDING', bg: 'bg-[#4ADE80]' };
+    if (ratio >= 0.8) return { text: 'EXCELLENT', bg: 'bg-[#86EFAC]' };
+    if (ratio >= 0.7) return { text: 'VERY GOOD', bg: 'bg-[#38BDF8]' };
+    if (ratio >= 0.6) return { text: 'GOOD', bg: 'bg-[#FFDE59]' };
+    if (ratio >= 0.5) return { text: 'AVERAGE', bg: 'bg-[#FF8E3C]' };
+    return { text: 'IN PROGRESS', bg: 'bg-[#FF70A6]' };
   });
 </script>
 

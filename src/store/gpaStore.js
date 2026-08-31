@@ -3,6 +3,22 @@ import { DEFAULT_GRADE_POINTS } from '../types/defaults.js';
 import { calculateSemesterStats, calculateOverallCGPA } from '../utils/gpaCalculator.js';
 
 const STORAGE_KEY = 'neogpa_workspace_v2';
+const MAX_UNDO_STEPS = 5;
+
+// Undo History Stack (Up to 5 snapshots)
+let undoStack = [];
+
+function pushUndoSnapshot(state) {
+  try {
+    const clone = JSON.parse(JSON.stringify(state));
+    undoStack.push(clone);
+    if (undoStack.length > MAX_UNDO_STEPS) {
+      undoStack.shift(); // Retain max 5 previous states
+    }
+  } catch (e) {
+    console.error('Error creating undo snapshot', e);
+  }
+}
 
 function getDefaultWorkspace() {
   return {
@@ -11,7 +27,7 @@ function getDefaultWorkspace() {
     templateDescription: '',
     maxGpa: 10,
     gradePoints: { ...DEFAULT_GRADE_POINTS },
-    semesters: [] // Reset clears all semesters to show the clean landing state
+    semesters: [] // Reset clears all semesters to show clean landing state
   };
 }
 
@@ -39,12 +55,34 @@ function createGpaStore() {
     return state;
   };
 
+  const mutateState = (fn) => {
+    update(state => {
+      pushUndoSnapshot(state);
+      const newState = fn(state);
+      return persist(newState);
+    });
+  };
+
   return {
     subscribe,
-    set: (state) => set(persist(state)),
-    // Load template or full workspace backup (supports both clean templates & full data with grades!)
+    set: (state) => {
+      update(curr => {
+        pushUndoSnapshot(curr);
+        return persist(state);
+      });
+    },
+
+    // Undo up to 5 steps back
+    undo: () => {
+      if (undoStack.length === 0) return false;
+      const prevState = undoStack.pop();
+      set(persist(prevState));
+      return true;
+    },
+
+    // Load template or full workspace backup
     loadTemplate: (template) => {
-      update(state => {
+      mutateState(state => {
         const isFullBackup = template.exportType === 'full_workspace_backup' || (template.semesters || []).some(s => (s.courses || []).some(c => c.grade));
 
         const newSemesters = (template.semesters || []).map((sem, sIdx) => ({
@@ -59,7 +97,7 @@ function createGpaStore() {
           }))
         }));
 
-        const newState = {
+        return {
           ...state,
           templateId: template.id || template.templateId || state.templateId,
           templateName: template.name || template.templateName || state.templateName,
@@ -68,35 +106,31 @@ function createGpaStore() {
           gradePoints: template.gradePoints || template.gradingScale || state.gradePoints,
           semesters: newSemesters.length > 0 ? newSemesters : state.semesters
         };
-        return persist(newState);
       });
     },
+
     // Update Scale settings
-    updateScaleSettings: (maxGpa, gradePoints) => {
-      update(state => {
-        const newState = {
-          ...state,
-          maxGpa: Number(maxGpa) || 10,
-          gradePoints: { ...gradePoints }
-        };
-        return persist(newState);
-      });
+    setScaleSettings: (scaleObj) => {
+      mutateState(state => ({
+        ...state,
+        maxGpa: Number(scaleObj.maxGpa) || 10,
+        gradePoints: { ...scaleObj.gradePoints }
+      }));
     },
+
     // Update Template Details
     updateTemplateMeta: (name, id, desc) => {
-      update(state => {
-        const newState = {
-          ...state,
-          templateName: name,
-          templateId: id,
-          templateDescription: desc
-        };
-        return persist(newState);
-      });
+      mutateState(state => ({
+        ...state,
+        templateName: name,
+        templateId: id,
+        templateDescription: desc
+      }));
     },
+
     // Add Semester
     addSemester: (customName) => {
-      update(state => {
+      mutateState(state => {
         const semNum = state.semesters.length + 1;
         const newSem = {
           id: `sem-${Date.now().toString(36)}`,
@@ -107,33 +141,29 @@ function createGpaStore() {
             { id: `c-${Date.now()}-3`, code: '', name: '', credits: 3, grade: '' }
           ]
         };
-        const newState = { ...state, semesters: [...state.semesters, newSem] };
-        return persist(newState);
+        return { ...state, semesters: [...state.semesters, newSem] };
       });
     },
+
     // Rename Semester
     renameSemester: (semesterId, newName) => {
-      update(state => {
-        const newState = {
-          ...state,
-          semesters: state.semesters.map(s => s.id === semesterId ? { ...s, name: newName } : s)
-        };
-        return persist(newState);
-      });
+      mutateState(state => ({
+        ...state,
+        semesters: state.semesters.map(s => s.id === semesterId ? { ...s, name: newName } : s)
+      }));
     },
+
     // Remove Semester
     removeSemester: (semesterId) => {
-      update(state => {
-        const newState = {
-          ...state,
-          semesters: state.semesters.filter(s => s.id !== semesterId)
-        };
-        return persist(newState);
-      });
+      mutateState(state => ({
+        ...state,
+        semesters: state.semesters.filter(s => s.id !== semesterId)
+      }));
     },
+
     // Add Course Row at end
     addCourse: (semesterId, courseData = {}) => {
-      update(state => {
+      mutateState(state => {
         const newCourse = {
           id: `c-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
           code: courseData.code || '',
@@ -142,7 +172,7 @@ function createGpaStore() {
           grade: courseData.grade || ''
         };
 
-        const newState = {
+        return {
           ...state,
           semesters: state.semesters.map(s => {
             if (s.id === semesterId) {
@@ -151,12 +181,12 @@ function createGpaStore() {
             return s;
           })
         };
-        return persist(newState);
       });
     },
+
     // Insert Course Row immediately after targetCourseId (Ctrl+Enter)
     insertCourseAfter: (semesterId, targetCourseId) => {
-      update(state => {
+      mutateState(state => {
         const newCourse = {
           id: `c-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
           code: '',
@@ -165,7 +195,7 @@ function createGpaStore() {
           grade: ''
         };
 
-        const newState = {
+        return {
           ...state,
           semesters: state.semesters.map(s => {
             if (s.id === semesterId) {
@@ -180,77 +210,71 @@ function createGpaStore() {
             return s;
           })
         };
-        return persist(newState);
       });
     },
+
     // Rearrange/Move Course Up or Down
     moveCourse: (semesterId, courseId, direction) => {
-      update(state => {
-        const newState = {
-          ...state,
-          semesters: state.semesters.map(s => {
-            if (s.id === semesterId) {
-              const idx = s.courses.findIndex(c => c.id === courseId);
-              if (idx === -1) return s;
-              const newIdx = direction === 'up' ? idx - 1 : idx + 1;
-              if (newIdx < 0 || newIdx >= s.courses.length) return s;
+      mutateState(state => ({
+        ...state,
+        semesters: state.semesters.map(s => {
+          if (s.id === semesterId) {
+            const idx = s.courses.findIndex(c => c.id === courseId);
+            if (idx === -1) return s;
+            const newIdx = direction === 'up' ? idx - 1 : idx + 1;
+            if (newIdx < 0 || newIdx >= s.courses.length) return s;
 
-              const courses = [...s.courses];
-              const temp = courses[idx];
-              courses[idx] = courses[newIdx];
-              courses[newIdx] = temp;
-              return { ...s, courses };
-            }
-            return s;
-          })
-        };
-        return persist(newState);
-      });
+            const courses = [...s.courses];
+            const temp = courses[idx];
+            courses[idx] = courses[newIdx];
+            courses[newIdx] = temp;
+            return { ...s, courses };
+          }
+          return s;
+        })
+      }));
     },
+
     // Update Course Row Field
     updateCourse: (semesterId, courseId, field, value) => {
-      update(state => {
-        const newState = {
-          ...state,
-          semesters: state.semesters.map(s => {
-            if (s.id === semesterId) {
-              return {
-                ...s,
-                courses: s.courses.map(c => {
-                  if (c.id === courseId) {
-                    return { ...c, [field]: value };
-                  }
-                  return c;
-                })
-              };
-            }
-            return s;
-          })
-        };
-        return persist(newState);
-      });
+      mutateState(state => ({
+        ...state,
+        semesters: state.semesters.map(s => {
+          if (s.id === semesterId) {
+            return {
+              ...s,
+              courses: s.courses.map(c => {
+                if (c.id === courseId) {
+                  return { ...c, [field]: value };
+                }
+                return c;
+              })
+            };
+          }
+          return s;
+        })
+      }));
     },
+
     // Remove Course Row
     removeCourse: (semesterId, courseId) => {
-      update(state => {
-        const newState = {
-          ...state,
-          semesters: state.semesters.map(s => {
-            if (s.id === semesterId) {
-              return {
-                ...s,
-                courses: s.courses.filter(c => c.id !== courseId)
-              };
-            }
-            return s;
-          })
-        };
-        return persist(newState);
-      });
+      mutateState(state => ({
+        ...state,
+        semesters: state.semesters.map(s => {
+          if (s.id === semesterId) {
+            return {
+              ...s,
+              courses: s.courses.filter(c => c.id !== courseId)
+            };
+          }
+          return s;
+        })
+      }));
     },
+
     // Batch Insert Courses
     batchInsertCourses: (semesterId, coursesList, options = { append: true }) => {
-      update(state => {
+      mutateState(state => {
         let semesters = [...state.semesters];
         const semExists = semesters.some(s => s.id === semesterId);
 
@@ -274,14 +298,17 @@ function createGpaStore() {
           });
         }
 
-        const newState = { ...state, semesters };
-        return persist(newState);
+        return { ...state, semesters };
       });
     },
+
     // Reset to default empty state
     resetAll: () => {
-      const fresh = getDefaultWorkspace();
-      set(persist(fresh));
+      update(curr => {
+        pushUndoSnapshot(curr);
+        const fresh = getDefaultWorkspace();
+        return persist(fresh);
+      });
     }
   };
 }

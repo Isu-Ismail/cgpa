@@ -1,7 +1,7 @@
 <script>
   import { 
     X, ScanLine, Sliders, FolderOpen, Target, FileJson, 
-    Download, ShieldCheck, AlertTriangle, Keyboard, Sparkles, Check, BookOpen 
+    Download, ShieldCheck, AlertTriangle, Keyboard, Sparkles, Check, BookOpen, Rocket, Lightbulb 
   } from 'lucide-svelte';
 
   let { isOpen = false, onClose = () => {} } = $props();
@@ -50,7 +50,8 @@
         <!-- Welcome Hero Banner -->
         <div class="neo-box bg-white p-4 sm:p-5 border-3 border-black shadow-[4px_4px_0px_0px_#000]">
           <h3 class="font-display font-black text-base sm:text-xl text-black uppercase tracking-tight flex items-center gap-2">
-            🚀 YOUR RETRO GPA & CGPA WORKSPACE
+            <Rocket class="w-5 h-5 text-[#FF8E3C]" />
+            <span>YOUR RETRO GPA & CGPA WORKSPACE</span>
           </h3>
           <p class="text-xs sm:text-sm font-mono text-zinc-700 mt-1 leading-relaxed">
             Welcome! <strong class="text-black">NeoCGPA v2.0</strong> is an all-in-one local GPA calculator, neural OCR marksheet scanner, and academic template manager designed for university students.
@@ -144,11 +145,15 @@
           <div class="text-xs font-mono space-y-1">
             <span class="font-black text-black uppercase">Keyboard Grid Shortcuts:</span>
             <div class="flex flex-wrap gap-2 text-[11px] text-zinc-700">
-              <span><kbd class="neo-kbd text-[9px] px-1">Arrow Keys</kbd> Navigate between cells</span>
+              <span><kbd class="neo-kbd text-[9px] px-1">Ctrl + ↑ ↓ ← →</kbd> Navigate cells</span>
               <span>•</span>
-              <span><kbd class="neo-kbd text-[9px] px-1">Enter</kbd> Open grade menu</span>
+              <span><kbd class="neo-kbd text-[9px] px-1">Type Letter</kbd> Select grade (e.g. A ➔ A+, press A ➔ A)</span>
               <span>•</span>
-              <span><kbd class="neo-kbd text-[9px] px-1">Ctrl + Enter</kbd> Insert row below</span>
+              <span><kbd class="neo-kbd text-[9px] px-1">Ctrl + Enter</kbd> Insert row</span>
+              <span>•</span>
+              <span><kbd class="neo-kbd text-[9px] px-1">Ctrl + Delete</kbd> Delete row</span>
+              <span>•</span>
+              <span><kbd class="neo-kbd text-[9px] px-1">Ctrl + Z</kbd> Undo (5 steps)</span>
             </div>
           </div>
         </div>
@@ -184,8 +189,9 @@
 
       <!-- Modal Footer -->
       <div class="bg-white border-t-3 border-black p-3 sm:p-4 flex items-center justify-between shrink-0">
-        <p class="text-[11px] font-mono text-zinc-500 hidden sm:block">
-          💡 Click the header logo anytime to re-open this guide!
+        <p class="text-[11px] font-mono text-zinc-500 hidden sm:flex items-center gap-1.5">
+          <Lightbulb class="w-3.5 h-3.5 text-[#FF8E3C] shrink-0" />
+          <span>Click the header logo anytime to re-open this guide!</span>
         </p>
         <button 
           onclick={handleGotIt}

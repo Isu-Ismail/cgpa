@@ -12,7 +12,7 @@
   import WelcomeModal from './components/WelcomeModal.svelte';
   import ExportModal from './components/ExportModal.svelte';
   import { generatePdfReport } from './utils/pdfGenerator.js';
-  import { Plus, ScanLine, Sparkles, FolderOpen, Download } from 'lucide-svelte';
+  import { Plus, ScanLine, Sparkles, FolderOpen, Download, BookOpen, Zap } from 'lucide-svelte';
 
   // Modal visibility states
   let isOcrOpen = $state(false);
@@ -34,6 +34,23 @@
     } catch (e) {
       console.error('LocalStorage read error', e);
     }
+  });
+
+  // Global Ctrl + Z Undo Listener (Undo up to 5 history steps)
+  $effect(() => {
+    function handleGlobalUndo(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        const active = document.activeElement;
+        const isEditingText = active && active.tagName === 'INPUT' && active.type === 'text' && active.selectionStart !== active.selectionEnd;
+        if (!isEditingText) {
+          e.preventDefault();
+          gpaStore.undo();
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleGlobalUndo);
+    return () => window.removeEventListener('keydown', handleGlobalUndo);
   });
 
   function handleOpenOcr(semesterId = null, file = null) {
@@ -149,8 +166,8 @@
     <!-- Semesters List -->
     {#if $semestersWithStats.length === 0}
       <div class="neo-box-lg bg-white p-10 text-center my-6 space-y-3">
-        <div class="w-14 h-14 bg-[#FFF4B8] border-2.5 border-black mx-auto flex items-center justify-center font-display font-black text-2xl shadow-brutal">
-          📚
+        <div class="w-14 h-14 bg-[#FFF4B8] border-2.5 border-black mx-auto flex items-center justify-center shadow-brutal text-black">
+          <BookOpen class="w-7 h-7 stroke-[2.5]" />
         </div>
         <h3 class="font-display font-black text-xl text-black">No Semesters Logged</h3>
         <p class="text-xs font-mono text-zinc-600 max-w-md mx-auto">
@@ -180,6 +197,7 @@
             {semester} 
             semesterIndex={index} 
             onOpenOcrForSemester={(semId) => handleOpenOcr(semId, null)}
+            onAddSemester={handleAddSemester}
           />
         {/each}
       </div>
@@ -252,8 +270,9 @@
   <!-- Footer -->
   <footer class="bg-[#FAF7EE] border-t-2.5 border-black py-3.5 px-6 mt-10 text-center text-xs font-mono font-bold text-zinc-600">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-      <button onclick={() => isWelcomeOpen = true} class="hover:underline flex items-center gap-1">
-        <span>⚡ NeoCGPA Calculator — Built with Svelte, Vite & TailwindCSS</span>
+      <button onclick={() => isWelcomeOpen = true} class="hover:underline flex items-center gap-1.5">
+        <Zap class="w-4 h-4 text-[#FFDE59] fill-[#FFDE59]" />
+        <span>NeoCGPA Calculator — Built with Svelte, Vite & TailwindCSS</span>
       </button>
       <span class="bg-black text-[#86EFAC] px-2 py-0.5 border border-black">Clipboard Direct Paste Enabled</span>
     </div>

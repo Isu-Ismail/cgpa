@@ -1,7 +1,7 @@
 <script>
   import { gpaStore } from '../store/gpaStore.js';
   import { scanMarksheetImage } from '../utils/ocrExtractor.js';
-  import { X, Upload, Check, AlertCircle, Sparkles, BookOpen, Layers, ClipboardCheck, Info } from 'lucide-svelte';
+  import { X, Upload, Check, AlertCircle, Sparkles, BookOpen, Layers, ClipboardCheck, Info, Camera, Zap } from 'lucide-svelte';
 
   let { 
     isOpen = false, 
@@ -256,7 +256,7 @@
       <div class="bg-[#FF70A6] border-b-3 border-black p-4 flex items-center justify-between text-white">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 bg-black text-[#FFDE59] border-2 border-black flex items-center justify-center font-bold text-lg shadow-[2px_2px_0px_0px_#000]">
-            📷
+            <Camera class="w-5 h-5" />
           </div>
           <div>
             <h3 class="font-display font-black text-xl text-black">Marksheet OCR Subject Extractor</h3>
@@ -293,9 +293,13 @@
 
           {#if isScanning}
             <div class="py-6 space-y-4">
-              <div class="relative w-16 h-16 border-3 border-black bg-[#FFDE59] mx-auto flex items-center justify-center shadow-[4px_4px_0px_0px_#000]">
+              <div class="relative w-16 h-16 border-3 border-black bg-[#FFDE59] mx-auto flex items-center justify-center shadow-[4px_4px_0px_0px_#000] text-black">
                 <div class="absolute inset-0 bg-[#FF70A6] animate-ping opacity-30"></div>
-                <span class="font-black text-2xl relative z-10">{isFromClipboard ? '📋' : '⚡'}</span>
+                {#if isFromClipboard}
+                  <ClipboardCheck class="w-8 h-8 stroke-[2.5] relative z-10" />
+                {:else}
+                  <Zap class="w-8 h-8 stroke-[2.5] relative z-10" />
+                {/if}
               </div>
               
               <div>
@@ -339,37 +343,10 @@
               <div class="flex flex-wrap items-center justify-center gap-2 mt-2">
                 <label 
                   for="ocr-upload-input"
-                  class="neo-btn bg-[#FFDE59] text-black px-4 py-2 text-xs font-black cursor-pointer"
+                  class="neo-btn bg-[#FFDE59] text-black px-5 py-2.5 text-xs font-black cursor-pointer shadow-[2px_2px_0px_0px_#000] hover:bg-[#ffe600]"
                 >
                   Browse File
                 </label>
-
-                <button 
-                  type="button"
-                  onclick={() => loadSamplePreset('sem1')}
-                  class="neo-btn bg-white hover:bg-zinc-100 text-black px-3 py-2 text-xs font-bold flex items-center gap-1.5"
-                >
-                  <Sparkles class="w-3.5 h-3.5 text-[#FF8E3C]" />
-                  <span>Sample Sem 1</span>
-                </button>
-
-                <button 
-                  type="button"
-                  onclick={() => loadSamplePreset('sem3')}
-                  class="neo-btn bg-[#86EFAC] hover:bg-[#4ADE80] text-black px-3 py-2 text-xs font-bold flex items-center gap-1.5"
-                >
-                  <Layers class="w-3.5 h-3.5 text-black" />
-                  <span>Sample Sem 3 (9 Subjects)</span>
-                </button>
-
-                <button 
-                  type="button"
-                  onclick={() => loadSamplePreset('sem6')}
-                  class="neo-btn bg-white hover:bg-zinc-100 text-black px-3 py-2 text-xs font-bold flex items-center gap-1.5"
-                >
-                  <BookOpen class="w-3.5 h-3.5 text-[#38BDF8]" />
-                  <span>Sample Sem 6</span>
-                </button>
               </div>
             </div>
           {/if}
@@ -388,7 +365,9 @@
         {#if showSuccessBanner && extractedResult}
           <div class="neo-box bg-[#4ADE80] text-black p-3 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200">
             <div class="flex items-center gap-2 text-xs font-mono font-bold">
-              <span class="w-5 h-5 bg-black text-[#86EFAC] rounded-full flex items-center justify-center font-black">✓</span>
+              <span class="w-5 h-5 bg-black text-[#86EFAC] rounded-full flex items-center justify-center font-black">
+                <Check class="w-3.5 h-3.5 text-[#86EFAC] stroke-[3]" />
+              </span>
               <span>{isFromClipboard ? 'Clipboard image processed successfully!' : 'Extraction complete!'} <strong>{extractedResult.courses.length} subjects</strong> detected.</span>
             </div>
             <span class="text-[10px] font-mono font-bold bg-black text-white px-2 py-0.5">Ready for Import</span>
@@ -447,17 +426,24 @@
 
               <!-- Target Destination Semester Selector -->
               <div class="flex items-center gap-2">
-                <label for="ocr-dest-sem" class="text-xs font-mono font-bold text-black">Target Semester:</label>
-                <select 
-                  id="ocr-dest-sem"
-                  bind:value={selectedTargetSemester}
-                  class="border-2 border-black bg-[#FFDE59] text-black font-black text-xs py-1.5 px-2 font-mono shadow-[2px_2px_0px_0px_#000] cursor-pointer"
-                >
-                  <option value="new">+ Create New Semester ({extractedResult.metadata.semester ? `Semester ${extractedResult.metadata.semester}` : 'Scanned Sheet'})</option>
-                  {#each $gpaStore.semesters as s}
-                    <option value={s.id}>{s.name}</option>
-                  {/each}
-                </select>
+                {#if initialSemesterId}
+                  {@const targetSem = $gpaStore.semesters.find(s => s.id === initialSemesterId)}
+                  <span class="neo-badge bg-[#FFDE59] text-black font-black text-xs py-1.5 px-3 border-2 border-black shadow-[1.5px_1.5px_0px_0px_#000]">
+                    Direct Import to: {targetSem ? targetSem.name : 'Selected Semester'}
+                  </span>
+                {:else}
+                  <label for="ocr-dest-sem" class="text-xs font-mono font-bold text-black">Target Semester:</label>
+                  <select 
+                    id="ocr-dest-sem"
+                    bind:value={selectedTargetSemester}
+                    class="border-2 border-black bg-[#FFDE59] text-black font-black text-xs py-1.5 px-2 font-mono shadow-[2px_2px_0px_0px_#000] cursor-pointer"
+                  >
+                    <option value="new">+ Create New Semester ({extractedResult.metadata.semester ? `Semester ${extractedResult.metadata.semester}` : 'Scanned Sheet'})</option>
+                    {#each $gpaStore.semesters as s}
+                      <option value={s.id}>{s.name}</option>
+                    {/each}
+                  </select>
+                {/if}
               </div>
             </div>
 

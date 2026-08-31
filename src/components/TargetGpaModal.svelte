@@ -34,7 +34,7 @@
       <div class="bg-[#C084FC] border-b-3 border-black p-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 bg-black text-[#FFDE59] border-2 border-black flex items-center justify-center font-bold text-lg shadow-[2px_2px_0px_0px_#000]">
-            🎯
+            <Target class="w-5 h-5" />
           </div>
           <div>
             <h3 class="font-display font-black text-xl text-black">Target CGPA Goal Planner</h3>

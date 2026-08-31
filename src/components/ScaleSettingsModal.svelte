@@ -1,6 +1,6 @@
 <script>
   import { gpaStore } from '../store/gpaStore.js';
-  import { X, Plus, Trash2, Check } from 'lucide-svelte';
+  import { X, Plus, Trash2, Check, Sliders } from 'lucide-svelte';
 
   let { isOpen = false, onClose = () => {} } = $props();
 
@@ -12,118 +12,125 @@
   $effect(() => {
     if (isOpen) {
       maxGpaInput = $gpaStore.maxGpa;
-      gradeEntries = Object.entries($gpaStore.gradePoints).map(([grade, point]) => ({
-        id: `ge-${grade}-${Date.now()}`,
+      const pointsMap = $gpaStore.gradePoints || {};
+      gradeEntries = Object.entries(pointsMap).map(([grade, point], index) => ({
+        id: `g-${index}-${grade}`,
         grade,
-        point: Number(point)
+        point
       }));
+      newGradeLetter = '';
+      newGradePoint = 0;
     }
   });
 
   function handleAddGrade() {
-    const letter = (newGradeLetter || '').trim().toUpperCase();
-    if (!letter) return;
+    const trimmed = newGradeLetter.trim().toUpperCase();
+    if (!trimmed) return;
 
-    if (gradeEntries.some(e => e.grade === letter)) {
-      alert(`Grade "${letter}" already exists.`);
-      return;
+    const existingIndex = gradeEntries.findIndex(e => e.grade.toUpperCase() === trimmed);
+    if (existingIndex >= 0) {
+      gradeEntries[existingIndex].point = Number(newGradePoint) || 0;
+    } else {
+      gradeEntries.push({
+        id: `g-${Date.now()}-${trimmed}`,
+        grade: trimmed,
+        point: Number(newGradePoint) || 0
+      });
     }
 
-    gradeEntries = [
-      ...gradeEntries,
-      { id: `ge-${letter}-${Date.now()}`, grade: letter, point: parseFloat(newGradePoint) || 0 }
-    ];
     newGradeLetter = '';
     newGradePoint = 0;
   }
 
-  function handleRemoveGrade(gradeLetter) {
-    if (gradeEntries.length <= 1) {
-      alert('You must have at least one grade in the scale.');
-      return;
-    }
-    gradeEntries = gradeEntries.filter(e => e.grade !== gradeLetter);
+  function handleRemoveGrade(gradeToRemove) {
+    gradeEntries = gradeEntries.filter(e => e.grade !== gradeToRemove);
   }
 
   function handleSave() {
-    const scaleObj = {};
-    gradeEntries.forEach(e => {
-      if (e.grade.trim()) {
-        scaleObj[e.grade.trim().toUpperCase()] = parseFloat(e.point) || 0;
+    const updatedGradePoints = {};
+    for (const entry of gradeEntries) {
+      if (entry.grade.trim()) {
+        updatedGradePoints[entry.grade.trim().toUpperCase()] = Number(entry.point) || 0;
       }
+    }
+
+    gpaStore.setScaleSettings({
+      maxGpa: Number(maxGpaInput) || 10,
+      gradePoints: updatedGradePoints
     });
 
-    const parsedMax = parseFloat(maxGpaInput) || 10;
-    gpaStore.updateScaleSettings(parsedMax, scaleObj);
     onClose();
   }
 </script>
 
 {#if isOpen}
+  <!-- Backdrop -->
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
     
     <div class="neo-box-xl bg-[#FAF7EE] w-full max-w-2xl max-h-[90vh] flex flex-col my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150">
       
       <!-- Modal Header -->
-      <div class="bg-[#FFF4B8] border-b-3 border-black p-4 flex items-center justify-between">
+      <div class="bg-[#FFF4B8] border-b-3 border-black p-3.5 sm:p-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 bg-black text-[#FFDE59] border-2 border-black flex items-center justify-center font-bold text-lg shadow-[2px_2px_0px_0px_#000]">
-            ⚙️
+            <Sliders class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="font-display font-black text-xl text-black">Grade Scale & Point Variables</h3>
+            <h3 class="font-display font-black text-lg sm:text-xl text-black">Grade Scale & Point Variables</h3>
             <p class="text-xs font-mono text-zinc-600 font-bold">Configure Total Out Of ceiling and letter grade points</p>
           </div>
         </div>
 
         <button 
           onclick={onClose}
-          class="neo-btn bg-white hover:bg-black hover:text-white text-black p-1.5 rounded-sm"
+          class="neo-btn bg-white hover:bg-[#FF4757] hover:text-white p-1 text-black"
+          title="Close Modal"
         >
           <X class="w-5 h-5" />
         </button>
       </div>
 
-      <!-- Modal Body -->
-      <div class="p-6 overflow-y-auto flex-1 space-y-6">
+      <!-- Modal Body (Smooth Scrolling) -->
+      <div class="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 scroll-smooth">
         
-        <!-- Max GPA Setup -->
-        <div class="neo-box bg-white p-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <label for="max-gpa-input" class="font-display font-black text-base text-black block">Total Out Of Ceiling (Max GPA)</label>
-              <p class="text-xs font-mono text-zinc-600">The total top GPA possible (e.g. 10.0, 5.0, 4.0, or custom)</p>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <input 
-                id="max-gpa-input"
-                type="number" 
-                step="0.1" 
-                min="1" 
-                max="100"
-                bind:value={maxGpaInput} 
-                class="neo-input text-lg font-mono font-black text-center w-28 py-1.5 px-2"
-              />
-              <span class="font-mono font-black text-sm text-black">Points</span>
-            </div>
+        <!-- Compact Max GPA Ceiling Box -->
+        <div class="neo-box bg-white p-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <label for="max-gpa-input" class="block font-display font-black text-sm text-black">
+              Max GPA Ceiling (Out of)
+            </label>
+            <p class="text-[11px] font-mono text-zinc-500 font-medium">
+              Maximum possible GPA for your university (e.g. 10.0 or 4.0)
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input 
+              id="max-gpa-input"
+              type="number" 
+              step="0.1" 
+              min="1" 
+              max="100" 
+              bind:value={maxGpaInput} 
+              class="neo-input text-base font-mono font-black text-center w-24 py-1 px-2"
+            />
+            <span class="text-xs font-mono font-bold text-zinc-500">/ 10.0</span>
           </div>
         </div>
 
         <!-- Grade Letter to Points Map -->
-        <div class="neo-box bg-white p-4 space-y-4">
+        <div class="neo-box bg-white p-3.5 space-y-3">
           <div class="flex items-center justify-between">
             <div>
-              <h4 class="font-display font-black text-base text-black">Grade Point Mapping</h4>
-              <p class="text-xs font-mono text-zinc-600">Define grade letters and their numeric point value</p>
+              <h4 class="font-display font-black text-sm text-black">Grade Point Mapping</h4>
+              <p class="text-[11px] font-mono text-zinc-500">Define grade letters and their numeric point value</p>
             </div>
-            <span class="neo-badge bg-[#86EFAC] text-black">{gradeEntries.length} Grades</span>
+            <span class="neo-badge bg-[#86EFAC] text-black text-xs">{gradeEntries.length} Grades</span>
           </div>
 
           <!-- Grade List Table -->
-          <div class="border-2 border-black max-h-60 overflow-y-auto">
+          <div class="border-2 border-black">
             <table class="w-full text-left text-xs border-collapse">
-              <thead class="bg-black text-white font-mono uppercase text-[10px] sticky top-0">
+              <thead class="bg-black text-white font-mono uppercase text-[10px]">
                 <tr>
                   <th class="p-2 w-32">Grade Letter</th>
                   <th class="p-2 border-l border-zinc-700">Point Value</th>
@@ -163,53 +170,46 @@
             </table>
           </div>
 
-          <!-- Add New Grade Row Form -->
-          <div class="bg-[#FAF7EE] border-2 border-black p-3 flex flex-col sm:flex-row items-center gap-2">
-            <div class="flex-1 flex items-center gap-2 w-full">
-              <input 
-                type="text" 
-                placeholder="New Letter (e.g. O or A-)" 
-                bind:value={newGradeLetter} 
-                class="neo-input text-xs font-mono font-bold py-1.5 px-2 uppercase flex-1 bg-white"
-              />
-              <input 
-                type="number" 
-                placeholder="Points" 
-                step="0.1" 
-                bind:value={newGradePoint} 
-                class="neo-input text-xs font-mono font-bold py-1.5 px-2 w-24 bg-white"
-              />
-            </div>
-            <button 
-              type="button" 
-              onclick={handleAddGrade}
-              class="neo-btn bg-[#4ADE80] text-black px-3 py-1.5 text-xs font-black w-full sm:w-auto flex items-center justify-center gap-1"
-            >
-              <Plus class="w-3.5 h-3.5 stroke-[3]" />
-              <span>Add Grade</span>
-            </button>
-          </div>
-
         </div>
 
       </div>
 
-      <!-- Modal Footer -->
-      <div class="bg-[#FAF7EE] border-t-3 border-black p-4 flex items-center justify-end gap-3">
-        <button 
-          onclick={onClose}
-          class="neo-btn bg-white hover:bg-zinc-100 text-black px-4 py-2 text-xs font-bold"
-        >
-          Cancel
-        </button>
+      <!-- Modal Footer Bar with + Add Grade Form & Save Button -->
+      <div class="bg-[#FAF7EE] border-t-3 border-black p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+        
+        <!-- Add New Grade Form -->
+        <form onsubmit={(e) => { e.preventDefault(); handleAddGrade(); }} class="flex items-center gap-2 w-full sm:w-auto">
+          <input 
+            type="text" 
+            placeholder="New Grade (e.g. O or A-)" 
+            bind:value={newGradeLetter} 
+            class="neo-input text-xs font-mono font-bold py-1.5 px-2 uppercase w-36 bg-white"
+          />
+          <input 
+            type="number" 
+            placeholder="Points" 
+            step="0.1" 
+            bind:value={newGradePoint} 
+            class="neo-input text-xs font-mono font-bold py-1.5 px-2 w-20 bg-white"
+          />
+          <button 
+            type="submit" 
+            class="neo-btn bg-[#4ADE80] text-black px-3 py-1.5 text-xs font-black shrink-0 flex items-center gap-1 shadow-[1.5px_1.5px_0px_0px_#000]"
+          >
+            <Plus class="w-3.5 h-3.5 stroke-[3]" />
+            <span>Add Grade</span>
+          </button>
+        </form>
 
+        <!-- Save Button ("Save" text) -->
         <button 
           onclick={handleSave}
-          class="neo-btn bg-[#FFDE59] hover:bg-[#FDB813] text-black px-5 py-2 text-xs font-black flex items-center gap-1.5"
+          class="neo-btn bg-[#FFDE59] hover:bg-[#FDB813] text-black px-6 py-2 text-xs font-black flex items-center gap-1.5 w-full sm:w-auto justify-center shadow-[2px_2px_0px_0px_#000]"
         >
           <Check class="w-4 h-4 stroke-[3]" />
-          <span>Save Scale Settings</span>
+          <span>Save</span>
         </button>
+
       </div>
 
     </div>
