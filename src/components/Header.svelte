@@ -112,16 +112,6 @@
         <span>Target</span>
       </button>
 
-      <!-- Clean Scheme Export (Desktop only) -->
-      <button 
-        onclick={handleExportCleanTemplate}
-        class="hidden lg:flex neo-btn bg-white hover:bg-zinc-100 text-black px-2.5 py-1 text-xs font-bold items-center gap-1 shrink-0"
-        title="Export Clean Template Scheme (No Grades) for Friends"
-      >
-        <FileJson class="w-3.5 h-3.5 text-[#38BDF8]" />
-        <span>Clean Scheme</span>
-      </button>
-
       <!-- Desktop Reset Button -->
       <button 
         onclick={() => isResetConfirmOpen = true} 

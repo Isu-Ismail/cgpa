@@ -5,7 +5,7 @@
   import ConfirmModal from './ConfirmModal.svelte';
   import { X, Search, Upload, Download, Trash2, Check, Copy, FolderCheck, FolderOpen, FileJson, Cloud, RefreshCw } from 'lucide-svelte';
 
-  let { isOpen = false, onClose = () => {} } = $props();
+  let { isOpen = false, initialTab = 'online', onClose = () => {} } = $props();
 
   let searchQuery = $state('');
   let activeTab = $state('online'); // 'online' | 'export' | 'library' | 'import'
@@ -32,9 +32,10 @@
 
   $effect(() => {
     if (isOpen) {
-      exportTplName = $gpaStore.templateName || 'Academic Course Template';
-      exportTplId = $gpaStore.templateId || `tpl-${Date.now().toString(36)}`;
-      exportTplDesc = $gpaStore.templateDescription || '';
+      activeTab = initialTab || 'online';
+      exportTplName = '';
+      exportTplId = '';
+      exportTplDesc = '';
       actionToastMessage = '';
       loadOnlineTemplates();
     }
@@ -44,9 +45,9 @@
     isLoadingCloud = true;
     cloudError = '';
     try {
-      onlineTemplates = await fetchOnlineTemplates(searchQuery);
+      onlineTemplates = await fetchOnlineTemplates();
     } catch (err) {
-      cloudError = 'Failed to load online templates from Firebase.';
+      cloudError = err.message || 'Failed to load online templates';
     } finally {
       isLoadingCloud = false;
     }
@@ -57,8 +58,7 @@
       const q = searchQuery.toLowerCase().trim();
       if (!q) return true;
       return (t.name || '').toLowerCase().includes(q) ||
-             (t.id || '').toLowerCase().includes(q) ||
-             (t.description || '').toLowerCase().includes(q);
+             (t.id || '').toLowerCase().includes(q);
     })
   );
 
@@ -77,11 +77,20 @@
     setTimeout(() => { actionToastMessage = ''; }, 2500);
   }
 
+  function getExportMetadata() {
+    return {
+      templateId: exportTplId.trim() || $gpaStore.templateId || `tpl-${Date.now().toString(36)}`,
+      templateName: exportTplName.trim() || $gpaStore.templateName || 'Academic Course Template',
+      templateDesc: exportTplDesc.trim() || $gpaStore.templateDescription || ''
+    };
+  }
+
   function handleExportCleanJson() {
+    const meta = getExportMetadata();
     templateStore.exportAsCleanJson({
-      templateId: exportTplId.trim(),
-      templateName: exportTplName.trim(),
-      templateDesc: exportTplDesc.trim(),
+      templateId: meta.templateId,
+      templateName: meta.templateName,
+      templateDesc: meta.templateDesc,
       maxGpa: $gpaStore.maxGpa,
       gradePoints: $gpaStore.gradePoints,
       semesters: $gpaStore.semesters
@@ -90,10 +99,11 @@
   }
 
   function handleExportFullDataBackup() {
+    const meta = getExportMetadata();
     templateStore.exportAsFullUserDataJson({
-      templateId: exportTplId.trim(),
-      templateName: exportTplName.trim(),
-      templateDesc: exportTplDesc.trim(),
+      templateId: meta.templateId,
+      templateName: meta.templateName,
+      templateDesc: meta.templateDesc,
       maxGpa: $gpaStore.maxGpa,
       gradePoints: $gpaStore.gradePoints,
       semesters: $gpaStore.semesters
@@ -102,15 +112,16 @@
   }
 
   function handleSaveToLocalLibrary() {
+    const meta = getExportMetadata();
     templateStore.saveTemplate({
-      id: exportTplId.trim(),
-      name: exportTplName.trim(),
-      description: exportTplDesc.trim(),
+      id: meta.templateId,
+      name: meta.templateName,
+      description: meta.templateDesc,
       maxGpa: $gpaStore.maxGpa,
       gradePoints: $gpaStore.gradePoints,
       semesters: $gpaStore.semesters
     });
-    triggerToast(`Template "${exportTplName}" saved to local library!`);
+    triggerToast(`Template "${meta.templateName}" saved to local library!`);
   }
 
   function promptLoadTemplate(tpl) {
@@ -199,6 +210,7 @@
 
       <!-- Tab Switcher -->
       <div class="bg-white border-b-3 border-black px-4 pt-3 flex gap-2 overflow-x-auto">
+        <!-- Tab 1: Online Templates -->
         <button 
           onclick={() => activeTab = 'online'}
           class="px-4 py-2 text-xs font-mono font-black border-2 border-black border-b-0 transition-colors flex items-center gap-1.5 {activeTab === 'online' ? 'bg-[#FFDE59] shadow-[2px_-2px_0px_0px_#000]' : 'bg-[#FAF7EE] hover:bg-zinc-100'}"
@@ -207,6 +219,15 @@
           <span>Online Templates ({onlineTemplates.length})</span>
         </button>
 
+        <!-- Tab 2: Import JSON Backup -->
+        <button 
+          onclick={() => activeTab = 'import'}
+          class="px-4 py-2 text-xs font-mono font-black border-2 border-black border-b-0 transition-colors {activeTab === 'import' ? 'bg-[#FF70A6] text-white shadow-[2px_-2px_0px_0px_#000]' : 'bg-[#FAF7EE] hover:bg-zinc-100'}"
+        >
+          Import JSON Backup
+        </button>
+
+        <!-- Tab 3: Export Data / Template -->
         <button 
           onclick={() => activeTab = 'export'}
           class="px-4 py-2 text-xs font-mono font-black border-2 border-black border-b-0 transition-colors {activeTab === 'export' ? 'bg-[#86EFAC] shadow-[2px_-2px_0px_0px_#000]' : 'bg-[#FAF7EE] hover:bg-zinc-100'}"
@@ -214,18 +235,12 @@
           Export Data / Template
         </button>
 
+        <!-- Tab 4: Local Library -->
         <button 
           onclick={() => activeTab = 'library'}
           class="px-4 py-2 text-xs font-mono font-black border-2 border-black border-b-0 transition-colors {activeTab === 'library' ? 'bg-[#38BDF8] shadow-[2px_-2px_0px_0px_#000]' : 'bg-[#FAF7EE] hover:bg-zinc-100'}"
         >
           Local Library ({$templateStore.length})
-        </button>
-
-        <button 
-          onclick={() => activeTab = 'import'}
-          class="px-4 py-2 text-xs font-mono font-black border-2 border-black border-b-0 transition-colors {activeTab === 'import' ? 'bg-[#FF70A6] text-white shadow-[2px_-2px_0px_0px_#000]' : 'bg-[#FAF7EE] hover:bg-zinc-100'}"
-        >
-          Import JSON Backup
         </button>
       </div>
 
@@ -273,44 +288,61 @@
           {:else}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               {#each filteredOnlineTemplates as tpl (tpl.docId || tpl.id)}
-                <div class="neo-box bg-white p-4 flex flex-col justify-between hover:shadow-brutal-lg transition-shadow">
-                  <div>
-                    <div class="flex items-start justify-between gap-2 mb-2">
-                      <h4 class="font-display font-black text-base text-black">{tpl.name}</h4>
-                      <span class="neo-badge bg-[#86EFAC] text-black shrink-0 font-mono">Cloud Template</span>
-                    </div>
+                {@const nameParts = (tpl.name || '').split(',').map(p => p.trim())}
+                {@const instName = tpl.institution || nameParts[0] || 'University Scheme'}
+                {@const branchName = tpl.branch || nameParts[1] || ''}
+                {@const yearVal = tpl.year || nameParts[2] || ''}
+                {@const semCount = tpl.semestersCount || (tpl.semesters || []).length}
+                {@const courseCount = tpl.coursesCount || (tpl.semesters || []).reduce((sum, s) => sum + (s.courses || []).length, 0)}
 
-                    <p class="text-xs font-medium text-zinc-600 mb-3">{tpl.description || 'Public University Course Scheme'}</p>
-
-                    <!-- Document ID -->
-                    <div class="flex items-center gap-1.5 mb-3 bg-[#FAF7EE] border border-black p-1.5 px-2 text-xs font-mono">
-                      <span class="text-zinc-500 font-bold">Doc ID:</span>
-                      <code class="font-black text-black select-all flex-1 truncate">{tpl.docId || tpl.id}</code>
-                      <button 
-                        onclick={() => handleCopyId(tpl.docId || tpl.id)}
-                        class="p-1 hover:bg-zinc-200 border border-black text-[10px]"
-                        title="Copy Doc ID"
-                      >
-                        {#if copyFeedbackId === (tpl.docId || tpl.id)}
-                          <Check class="w-3 h-3 text-green-600" />
+                <div class="neo-box bg-white p-4 flex flex-col justify-between space-y-3 hover:shadow-brutal-lg transition-shadow border-2">
+                  <div class="space-y-2">
+                    
+                    <!-- Card Top Row: Institution + Badge -->
+                    <div class="flex items-start justify-between gap-2">
+                      <div>
+                        <div class="flex items-center gap-1.5 text-xs font-mono font-bold text-amber-800 uppercase tracking-wide">
+                          <span class="text-sm">🏛️</span>
+                          <span>{instName}</span>
+                        </div>
+                        {#if branchName}
+                          <h4 class="font-display font-black text-sm text-black leading-snug mt-0.5">
+                            {branchName} {#if yearVal}<span class="text-zinc-500 font-mono text-xs font-normal">({yearVal})</span>{/if}
+                          </h4>
                         {:else}
-                          <Copy class="w-3 h-3 text-black" />
+                          <h4 class="font-display font-black text-sm text-black leading-snug mt-0.5">
+                            {tpl.name}
+                          </h4>
                         {/if}
-                      </button>
+                      </div>
+                      <span class="neo-badge bg-[#86EFAC] text-black text-[10px] font-bold border border-black shadow-[1px_1px_0px_0px_#000] shrink-0">
+                        CLOUD TEMPLATE
+                      </span>
                     </div>
 
-                    <div class="text-[11px] font-mono text-zinc-500 space-y-1 mb-4">
-                      <div>Semesters Logged: <strong class="text-black">{tpl.semesters?.length || 0}</strong></div>
-                      <div>Scale: <strong class="text-black">{tpl.maxGpa}pt Scale</strong></div>
+                    <!-- Description Box -->
+                    <div class="bg-[#FFFDF5] border border-black/20 p-2.5 text-xs font-mono text-zinc-700 leading-relaxed">
+                      {tpl.description || 'Subject details & curriculum course scheme.'}
                     </div>
+
+                    <!-- Stats Row -->
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-mono text-zinc-600 font-semibold pt-1">
+                      <span class="flex items-center gap-1"><strong class="text-black">{semCount}</strong> Semesters</span>
+                      <span>•</span>
+                      <span class="flex items-center gap-1"><strong class="text-black">{courseCount}</strong> Courses</span>
+                      <span>•</span>
+                      <span class="bg-[#FFF4B8] text-black px-1.5 py-0.5 border border-black font-bold text-[10px]">{tpl.maxGpa || 10}.0 Scale</span>
+                    </div>
+
                   </div>
 
-                  <div class="pt-3 border-t-2 border-black/10 flex items-center justify-between gap-2">
+                  <!-- Action Button -->
+                  <div class="pt-2 border-t-2 border-black/10">
                     <button 
                       onclick={() => promptLoadTemplate(tpl)}
-                      class="neo-btn bg-[#FFDE59] hover:bg-amber-400 text-black px-3 py-1.5 text-xs font-black flex items-center gap-1 flex-1 justify-center"
+                      class="neo-btn bg-[#FFDE59] hover:bg-amber-400 text-black px-3 py-2 text-xs font-black w-full flex items-center justify-center gap-1.5 shadow-[1.5px_1.5px_0px_0px_#000]"
                     >
-                      <FolderCheck class="w-3.5 h-3.5 text-black" />
+                      <FolderCheck class="w-4 h-4 text-black" />
                       <span>Import & Apply Scheme</span>
                     </button>
                   </div>
@@ -332,32 +364,34 @@
 
             <div class="space-y-3">
               <div>
-                <label for="exp-tpl-name" class="block text-xs font-mono font-bold text-black mb-1">Scheme / Backup Name *</label>
+                <label for="exp-tpl-name" class="block text-xs font-mono font-bold text-black mb-1">Scheme / Backup Name</label>
                 <input 
                   id="exp-tpl-name"
                   type="text" 
-                  placeholder="e.g. Anna Univ Production Engineering 2023"
+                  placeholder="e.g. Anna University, Production Engineering, 2023"
                   bind:value={exportTplName}
                   class="neo-input text-xs font-bold py-2"
                 />
+                <p class="text-[10px] font-mono text-zinc-500 mt-1">Hint: Leave blank to use active scheme name ({$gpaStore.templateName || 'Academic Course Template'})</p>
               </div>
 
               <div>
-                <label for="exp-tpl-id" class="block text-xs font-mono font-bold text-black mb-1">ID *</label>
+                <label for="exp-tpl-id" class="block text-xs font-mono font-bold text-black mb-1">ID</label>
                 <input 
                   id="exp-tpl-id"
                   type="text" 
-                  placeholder="e.g. aupt202316"
+                  placeholder="e.g. au_prod_2023"
                   bind:value={exportTplId}
                   class="neo-input text-xs font-mono py-2"
                 />
+                <p class="text-[10px] font-mono text-zinc-500 mt-1">Hint: Leave blank to auto-generate unique ID</p>
               </div>
 
               <div>
                 <label for="exp-tpl-desc" class="block text-xs font-mono font-bold text-black mb-1">Description</label>
                 <textarea 
                   id="exp-tpl-desc"
-                  placeholder="Details about regulation, department, subjects..."
+                  placeholder="e.g. Subject details for 2023 batch 1st to 6th semesters..."
                   bind:value={exportTplDesc}
                   rows="2"
                   class="neo-input text-xs font-medium py-2"

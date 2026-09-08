@@ -1,8 +1,10 @@
 <script>
   import { gpaStore, overallCgpa } from '../store/gpaStore.js';
   import confetti from 'canvas-confetti';
-  import { BookOpen, Calculator, Sparkles } from 'lucide-svelte';
+  import { BookOpen, Calculator, Sparkles, Target } from 'lucide-svelte';
   import { DEFAULT_GRADE_COLORS } from '../types/defaults.js';
+
+  let { onOpenTarget = () => {} } = $props();
 
   function triggerCelebration() {
     confetti({
@@ -36,9 +38,17 @@
       
       <div>
         <div class="flex items-center justify-between gap-2 mb-1">
-          <div class="flex items-center gap-1.5">
+          <div class="flex items-center gap-1.5 flex-wrap">
             <span class="neo-badge bg-black text-white font-mono text-[10px]">CUMULATIVE CGPA</span>
             <span class="neo-badge {performanceRemark.bg} text-black font-black text-[10px]">{performanceRemark.text}</span>
+            <button 
+              onclick={onOpenTarget}
+              class="neo-btn bg-[#C084FC] hover:bg-[#a855f7] text-black px-2 py-0.5 text-[10px] font-black flex items-center gap-1 shadow-[1px_1px_0px_0px_#000] ml-1 transition-transform hover:scale-105"
+              title="Set Target CGPA Goal & Planner"
+            >
+              <Target class="w-3 h-3 stroke-[2.5]" />
+              <span>Set Target</span>
+            </button>
           </div>
           <button 
             onclick={triggerCelebration}

@@ -75,33 +75,33 @@
             <div class="neo-box bg-[#FAF7EE] p-3.5 flex flex-col justify-between hover:shadow-brutal transition-shadow border-2">
               
               <!-- Card Header -->
-              <div class="flex items-center justify-between border-b border-black/20 pb-2 mb-2">
+              <div class="flex items-center justify-between border-b-2 border-black/15 pb-2 mb-2">
                 <span class="font-display font-black text-sm text-black truncate max-w-[130px]">{sem.name}</span>
-                <span class="neo-badge bg-[#FFDE59] text-black text-[10px] py-0 px-1 font-mono">
+                <span class="neo-badge bg-[#FFDE59] text-black text-[11px] font-mono font-black border border-black shadow-[1px_1px_0px_0px_#000] px-1.5 py-0.5">
                   SGPA: {sem.sgpa.toFixed(2)}
                 </span>
               </div>
 
               <!-- Metrics -->
               <div class="grid grid-cols-2 gap-2 text-xs font-mono my-1">
-                <div class="bg-white border border-black p-1.5 shadow-[1px_1px_0px_0px_#000]">
+                <div class="bg-white border-1.5 border-black p-1.5 shadow-[1px_1px_0px_0px_#000]">
                   <span class="text-[10px] text-zinc-500 font-bold block">Points Earned:</span>
                   <strong class="font-black text-black text-sm">{sem.totalQualityPoints.toFixed(1)}</strong>
                 </div>
 
-                <div class="bg-white border border-black p-1.5 shadow-[1px_1px_0px_0px_#000]">
+                <div class="bg-white border-1.5 border-black p-1.5 shadow-[1px_1px_0px_0px_#000]">
                   <span class="text-[10px] text-zinc-500 font-bold block">Earned Credits:</span>
                   <strong class="font-black text-black text-sm">{sem.totalCredits}</strong>
                 </div>
               </div>
 
-              <!-- Running CGPA Banner -->
-              <div class="mt-2 pt-2 border-t border-black/20 flex items-center justify-between text-[11px] font-mono font-bold">
-                <span class="text-zinc-600 flex items-center gap-1">
-                  <Award class="w-3.5 h-3.5 text-[#FF8E3C]" />
-                  <span>Running CGPA:</span>
+              <!-- Running CGPA Banner (High Contrast Bold Display) -->
+              <div class="mt-2.5 pt-2 border-t-2 border-black/15 flex items-center justify-between">
+                <span class="text-xs font-mono font-black text-zinc-800 flex items-center gap-1">
+                  <Award class="w-4 h-4 text-[#FF8E3C] stroke-[2.5]" />
+                  <span>Running CGPA</span>
                 </span>
-                <span class="bg-black text-[#86EFAC] px-1.5 py-0.2 border border-black font-black">
+                <span class="neo-badge bg-[#86EFAC] hover:bg-[#4ADE80] text-black font-display font-black text-sm px-2.5 py-0.5 border-1.5 border-black shadow-[1.5px_1.5px_0px_0px_#000]">
                   {sem.runningCgpa.toFixed(2)}
                 </span>
               </div>

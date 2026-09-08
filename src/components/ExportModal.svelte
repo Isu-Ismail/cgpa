@@ -1,11 +1,12 @@
 <script>
-  import { X, FileText, FileJson, Download, Check, Sparkles, AlertCircle } from 'lucide-svelte';
+  import { X, FileText, FileJson, FileBraces, Download, Sparkles } from 'lucide-svelte';
 
   let { 
     isOpen = false, 
     onClose = () => {},
     onExportJson = () => {},
-    onExportPdf = () => {}
+    onExportPdf = () => {},
+    onExportCleanJson = () => {}
   } = $props();
 
   function handleSelectPdf() {
@@ -15,6 +16,11 @@
 
   function handleSelectJson() {
     onExportJson();
+    onClose();
+  }
+
+  function handleSelectCleanJson() {
+    onExportCleanJson();
     onClose();
   }
 </script>
@@ -28,14 +34,14 @@
     aria-labelledby="export-modal-title"
   >
     <!-- Modal Container -->
-    <div class="neo-box bg-[#FAF7EE] w-full max-w-lg overflow-hidden shadow-[8px_8px_0px_0px_#000] my-auto flex flex-col">
+    <div class="neo-box bg-[#FAF7EE] w-full max-w-2xl overflow-hidden shadow-[8px_8px_0px_0px_#000] my-auto flex flex-col">
       
       <!-- Header Bar -->
       <div class="bg-[#4ADE80] border-b-3 border-black p-4 flex items-center justify-between">
         <div class="flex items-center gap-2.5">
           <Download class="w-6 h-6 text-black stroke-[2.5]" />
           <h2 id="export-modal-title" class="font-display font-black text-xl text-black tracking-tight uppercase">
-            EXPORT WORKSPACE DATA
+            EXPORT WORKSPACE DATA & SCHEMES
           </h2>
         </div>
         <button 
@@ -50,54 +56,77 @@
       <!-- Modal Content Body -->
       <div class="p-5 space-y-4 font-mono">
         <p class="text-xs text-zinc-700 font-bold leading-relaxed">
-          Choose your preferred export format. You can generate a clean printable PDF report or download a complete JSON data backup.
+          Choose your preferred export format. Generate a printable PDF report, export full data with grades, or download a clean course scheme template for sharing.
         </p>
 
-        <!-- Option Cards Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+        <!-- Option Cards Grid (3 Columns) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-1">
           
           <!-- Option 1: PDF Document Report -->
           <button 
             onclick={handleSelectPdf}
-            class="neo-box bg-white hover:bg-[#FFF4B8] p-4 text-left border-3 border-black shadow-[4px_4px_0px_0px_#000] transition-all group flex flex-col justify-between"
+            class="neo-box bg-white hover:bg-[#FFF4B8] p-4 text-left border-3 border-black shadow-[3px_3px_0px_0px_#000] transition-all group flex flex-col justify-between"
           >
             <div class="space-y-2">
               <div class="w-10 h-10 bg-[#FF70A6] text-white border-2 border-black flex items-center justify-center font-black shadow-[2px_2px_0px_0px_#000] group-hover:scale-105 transition-transform">
                 <FileText class="w-5 h-5 stroke-[2.5]" />
               </div>
-              <h3 class="font-display font-black text-base text-black uppercase tracking-tight">
+              <h3 class="font-display font-black text-sm text-black uppercase tracking-tight">
                 PDF REPORT
               </h3>
               <p class="text-[11px] text-zinc-600 leading-normal">
-                Generates a clean multi-page document with CGPA summary on Page 1 and individual semester course tables on subsequent pages.
+                Generates a clean multi-page document with CGPA summary and semester tables for printing.
               </p>
             </div>
 
-            <div class="pt-4 flex items-center gap-1.5 text-xs font-black text-black group-hover:underline">
+            <div class="pt-4 flex items-center gap-1 text-xs font-black text-black group-hover:underline">
               <span>Generate PDF</span>
               <span>→</span>
             </div>
           </button>
 
-          <!-- Option 2: JSON Backup File -->
+          <!-- Option 2: Full JSON Backup File (With Grades) -->
           <button 
             onclick={handleSelectJson}
-            class="neo-box bg-white hover:bg-[#DCFCE7] p-4 text-left border-3 border-black shadow-[4px_4px_0px_0px_#000] transition-all group flex flex-col justify-between"
+            class="neo-box bg-white hover:bg-[#DCFCE7] p-4 text-left border-3 border-black shadow-[3px_3px_0px_0px_#000] transition-all group flex flex-col justify-between"
           >
             <div class="space-y-2">
               <div class="w-10 h-10 bg-[#38BDF8] text-black border-2 border-black flex items-center justify-center font-black shadow-[2px_2px_0px_0px_#000] group-hover:scale-105 transition-transform">
                 <FileJson class="w-5 h-5 stroke-[2.5]" />
               </div>
-              <h3 class="font-display font-black text-base text-black uppercase tracking-tight">
-                JSON BACKUP
+              <h3 class="font-display font-black text-sm text-black uppercase tracking-tight">
+                FULL BACKUP
               </h3>
               <p class="text-[11px] text-zinc-600 leading-normal">
-                Downloads a raw `.json` file containing all your semesters, subjects, credits, and grades for future restore and editing.
+                Raw `.json` backup containing all semesters, subjects, credits, and <strong>your grades</strong>.
               </p>
             </div>
 
-            <div class="pt-4 flex items-center gap-1.5 text-xs font-black text-black group-hover:underline">
-              <span>Export JSON</span>
+            <div class="pt-4 flex items-center gap-1 text-xs font-black text-black group-hover:underline">
+              <span>Export Full JSON</span>
+              <span>→</span>
+            </div>
+          </button>
+
+          <!-- Option 3: Clean Scheme Template (Without Grades) -->
+          <button 
+            onclick={handleSelectCleanJson}
+            class="neo-box bg-white hover:bg-[#FFF4B8] p-4 text-left border-3 border-black shadow-[3px_3px_0px_0px_#000] transition-all group flex flex-col justify-between"
+          >
+            <div class="space-y-2">
+              <div class="w-10 h-10 bg-[#FFDE59] text-black border-2 border-black flex items-center justify-center font-black shadow-[2px_2px_0px_0px_#000] group-hover:scale-105 transition-transform">
+                <FileBraces class="w-5 h-5 stroke-[2.5]" />
+              </div>
+              <h3 class="font-display font-black text-sm text-black uppercase tracking-tight">
+                CLEAN SCHEME
+              </h3>
+              <p class="text-[11px] text-zinc-600 leading-normal">
+                Exports subjects & credits list <strong>without your grades</strong>. Ready to share with classmates!
+              </p>
+            </div>
+
+            <div class="pt-4 flex items-center gap-1 text-xs font-black text-black group-hover:underline">
+              <span>Clean Scheme</span>
               <span>→</span>
             </div>
           </button>
@@ -107,7 +136,7 @@
         <!-- Note info -->
         <div class="bg-[#FFFDF5] p-3 border-2 border-black text-[11px] text-zinc-600 flex items-start gap-2">
           <Sparkles class="w-4 h-4 text-[#FF8E3C] shrink-0 mt-0.5" />
-          <span>Both options are generated 100% locally in your browser. Nothing is uploaded to any server.</span>
+          <span>All options are generated 100% locally in your browser. Nothing is uploaded to any server.</span>
         </div>
       </div>
 
