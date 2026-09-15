@@ -16,7 +16,10 @@
   import WelcomeModal from "./components/WelcomeModal.svelte";
   import StartupTemplateModal from "./components/StartupTemplateModal.svelte";
   import ExportModal from "./components/ExportModal.svelte";
+  import TemplateEditorModal from "./components/TemplateEditorModal.svelte";
+  import PasscodeAuthModal from "./components/PasscodeAuthModal.svelte";
   import { generatePdfReport } from "./utils/pdfGenerator.js";
+  import { fetchSingleCloudTemplate } from "./utils/firebaseService.js";
   import {
     Plus,
     ScanLine,
@@ -40,9 +43,56 @@
   let isTargetOpen = $state(false);
   let isWelcomeOpen = $state(false);
   let isExportOpen = $state(false);
+  let isTemplateEditorOpen = $state(false);
+  let templateToEdit = $state(null);
+
+  // Passcode Auth State
+  let isPasscodeAuthOpen = $state(false);
+  let templateToAuth = $state(null);
+
+  let sharedLinkToast = $state("");
+
+  function handleRequestEditTemplate(tpl = null) {
+    if (!tpl) {
+      templateToEdit = null;
+      isTemplateEditorOpen = true;
+      return;
+    }
+    templateToAuth = tpl;
+    isPasscodeAuthOpen = true;
+  }
+
+  function handlePasscodeAuthSuccess(passcode) {
+    templateToEdit = { ...templateToAuth, passcode };
+    isPasscodeAuthOpen = false;
+    templateToAuth = null;
+    isTemplateEditorOpen = true;
+  }
 
   // Hidden DOM ref for direct JSON file picker
   let jsonFileInputRef = $state(null);
+
+  // Auto-load shared cloud template if ?tpl=TMP-xxxxxx is in URL
+  $effect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const rawTpl = urlParams.get("tpl") || urlParams.get("template");
+      if (rawTpl) {
+        const docId = rawTpl.startsWith("TMP-") ? rawTpl : `TMP-${rawTpl}`;
+        fetchSingleCloudTemplate(docId).then((template) => {
+          if (template) {
+            gpaStore.loadTemplate(template);
+            sharedLinkToast = `🎉 Automatically loaded shared scheme "${template.name}" (${docId})!`;
+            setTimeout(() => {
+              sharedLinkToast = "";
+            }, 7000);
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Error reading URL share link:", e);
+    }
+  });
 
   // Auto-open Welcome Guide modal on first visit if not dismissed in cache
   $effect(() => {
@@ -377,6 +427,26 @@
     isOpen={isTemplatesOpen}
     initialTab={templatesInitialTab}
     onClose={() => (isTemplatesOpen = false)}
+    onEditTemplate={handleRequestEditTemplate}
+  />
+
+  <PasscodeAuthModal
+    isOpen={isPasscodeAuthOpen}
+    template={templateToAuth}
+    onSuccess={handlePasscodeAuthSuccess}
+    onClose={() => {
+      isPasscodeAuthOpen = false;
+      templateToAuth = null;
+    }}
+  />
+
+  <TemplateEditorModal
+    isOpen={isTemplateEditorOpen}
+    initialTemplate={templateToEdit}
+    onClose={() => {
+      isTemplateEditorOpen = false;
+      templateToEdit = null;
+    }}
   />
 
   <TargetGpaModal
