@@ -79,13 +79,18 @@
       const rawTpl = urlParams.get("tpl") || urlParams.get("template");
       if (rawTpl) {
         const docId = rawTpl.startsWith("TMP-") ? rawTpl : `TMP-${rawTpl}`;
+
+        // Immediately clear query parameter from URL bar so reloads preserve local edits
+        const cleanUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, document.title, cleanUrl);
+
         fetchSingleCloudTemplate(docId).then((template) => {
           if (template) {
             gpaStore.loadTemplate(template);
-            sharedLinkToast = `🎉 Automatically loaded shared scheme "${template.name}" (${docId})!`;
+            sharedLinkToast = `🎉 Loaded shared scheme "${template.name}" (${docId})! Top link cleared so your edits are saved and won't reset on reload.`;
             setTimeout(() => {
               sharedLinkToast = "";
-            }, 7000);
+            }, 9000);
           }
         });
       }
@@ -253,6 +258,23 @@
 
   <!-- Main Workspace Container -->
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-6">
+    {#if sharedLinkToast}
+      <div
+        class="neo-box bg-[#86EFAC] text-black p-4 mb-6 flex items-center justify-between gap-3 font-mono font-bold text-xs border-2.5 shadow-brutal"
+      >
+        <div class="flex items-center gap-2.5">
+          <Sparkles class="w-5 h-5 text-black shrink-0 fill-[#FFDE59]" />
+          <span>{sharedLinkToast}</span>
+        </div>
+        <button
+          onclick={() => (sharedLinkToast = "")}
+          class="neo-btn bg-black text-white px-2.5 py-1 text-[10px] font-black uppercase"
+        >
+          Dismiss
+        </button>
+      </div>
+    {/if}
+
     <!-- Hero / Stats Dashboard -->
     <QuickStats onOpenTarget={() => (isTargetOpen = true)} />
 
