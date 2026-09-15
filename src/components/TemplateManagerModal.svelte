@@ -182,12 +182,8 @@
         secretPasscode: cloudPasscode.trim()
       });
 
-      const origin = window.location.origin + window.location.pathname;
-      const shareUrl = `${origin}?tpl=${fullDocId}`;
-
       publishedShareResult = {
         docId: fullDocId,
-        shareUrl,
         passcode: cloudPasscode.trim(),
         isUpdate: result.isUpdate
       };
@@ -204,11 +200,6 @@
     } finally {
       isPublishingCloud = false;
     }
-  }
-
-  function handleCopyShareUrl(url) {
-    navigator.clipboard.writeText(url);
-    triggerToast('Copied direct share link to clipboard!');
   }
 
   async function loadOnlineTemplates() {
@@ -465,7 +456,6 @@
                 {@const semCount = tpl.semestersCount || (tpl.semesters || []).length}
                 {@const courseCount = tpl.coursesCount || (tpl.semesters || []).reduce((sum, s) => sum + (s.courses || []).length, 0)}
                 {@const docIdVal = tpl.docId || tpl.id}
-                {@const tplShareUrl = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}?tpl=${docIdVal}` : `?tpl=${docIdVal}`}
 
                 <div class="neo-box bg-white p-4 flex flex-col justify-between space-y-3 hover:shadow-brutal-lg transition-shadow border-2">
                   <div class="space-y-2">
@@ -497,35 +487,26 @@
                       {tpl.description || 'Subject details & curriculum course scheme.'}
                     </div>
 
-                    <!-- Template ID & Direct Share Link Box -->
+                    <!-- Template ID Box -->
                     <div class="bg-[#FAF7EE] border border-black p-1.5 px-2 text-[11px] font-mono flex items-center justify-between gap-1">
                       <div class="flex items-center gap-1 overflow-hidden">
-                        <span class="text-zinc-500 font-bold shrink-0">ID:</span>
+                        <span class="text-zinc-500 font-bold shrink-0">Template ID:</span>
                         <code class="font-black text-black select-all truncate">{docIdVal}</code>
                       </div>
 
                       <div class="flex items-center gap-1 shrink-0">
                         <button 
                           onclick={() => handleCopyId(docIdVal)}
-                          class="neo-btn bg-white hover:bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold flex items-center gap-1"
+                          class="neo-btn bg-[#FFDE59] hover:bg-amber-400 text-black px-2 py-0.5 text-[10px] font-bold flex items-center gap-1 shadow-[1px_1px_0px_0px_#000]"
                           title="Copy Template ID"
                         >
                           {#if copyFeedbackId === docIdVal}
                             <Check class="w-3 h-3 text-green-600" />
-                            <span class="text-green-700">Copied</span>
+                            <span class="text-green-700">Copied ID</span>
                           {:else}
                             <Copy class="w-3 h-3 text-black" />
-                            <span>ID</span>
+                            <span>Copy ID</span>
                           {/if}
-                        </button>
-
-                        <button 
-                          onclick={() => handleCopyShareUrl(tplShareUrl)}
-                          class="neo-btn bg-[#FFDE59] hover:bg-amber-400 text-black px-1.5 py-0.5 text-[10px] font-bold flex items-center gap-1 shadow-[1px_1px_0px_0px_#000]"
-                          title="Copy Direct Share Link"
-                        >
-                          <Link class="w-3 h-3 text-black" />
-                          <span>Link</span>
                         </button>
                       </div>
                     </div>
@@ -579,7 +560,7 @@
                     <span>Publish Scheme to Public Cloud</span>
                   </h4>
                   <p class="text-xs font-mono text-zinc-600 mt-0.5">
-                    Share your scheme publicly with teammates via a direct link or <strong>TMP-xxxxxx</strong> Template ID.
+                    Share your scheme publicly with teammates using your unique <strong>TMP-xxxxxx</strong> Template ID.
                   </p>
                 </div>
                 <span class="neo-badge bg-[#86EFAC] text-black font-mono text-[10px] font-bold border border-black shadow-[1px_1px_0px_0px_#000]">
@@ -595,26 +576,25 @@
                       <Sparkles class="w-4 h-4 text-green-700" />
                       <span>{publishedShareResult.isUpdate ? '✅ Scheme Updated Successfully!' : '🎉 Published to Cloud Successfully!'}</span>
                     </div>
-                    <span class="font-mono text-[10px] font-bold bg-white border border-black px-1.5 py-0.5">ID: {publishedShareResult.docId}</span>
                   </div>
 
-                  <!-- Direct Shareable Link Box -->
+                  <!-- Shareable Template ID Box -->
                   <div>
-                    <label for="direct-share-url-input" class="block text-[11px] font-mono font-bold text-black mb-1">Direct Teammate Link (Click to Copy):</label>
+                    <label for="direct-share-id-input" class="block text-[11px] font-mono font-bold text-black mb-1">Shareable Template ID (Share with friends):</label>
                     <div class="flex items-center gap-2">
                       <input 
-                        id="direct-share-url-input"
+                        id="direct-share-id-input"
                         type="text" 
                         readonly 
-                        value={publishedShareResult.shareUrl}
+                        value={publishedShareResult.docId}
                         class="neo-input text-xs font-mono font-bold bg-white flex-1 select-all"
                       />
                       <button 
-                        onclick={() => handleCopyShareUrl(publishedShareResult.shareUrl)}
+                        onclick={() => handleCopyId(publishedShareResult.docId)}
                         class="neo-btn bg-[#FFDE59] hover:bg-amber-400 text-black px-3 py-2 text-xs font-black flex items-center gap-1 shrink-0"
                       >
                         <Copy class="w-3.5 h-3.5" />
-                        <span>Copy Link</span>
+                        <span>Copy Template ID</span>
                       </button>
                     </div>
                   </div>
