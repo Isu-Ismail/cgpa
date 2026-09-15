@@ -235,3 +235,34 @@ export async function publishCloudTemplate({ docId, metadata, payload, secretPas
   return { success: true, docId: cleanId, isUpdate: existing.exists };
 }
 
+/**
+ * Delete a Cloud Template by ID with Passcode Verification
+ */
+export async function deleteCloudTemplate({ docId, secretPasscode }) {
+  if (!docId || !docId.trim()) throw new Error('Template ID is required.');
+  if (!secretPasscode || !secretPasscode.trim()) throw new Error('Secret Passcode is required to delete.');
+
+  const cleanId = docId.trim();
+  const providedHash = await hashPasscode(secretPasscode.trim());
+
+  const existing = await checkTemplateIdExists(cleanId);
+  if (!existing.exists) {
+    throw new Error(`Template "${cleanId}" does not exist on cloud.`);
+  }
+
+  if (existing.passcodeHash && existing.passcodeHash !== providedHash) {
+    throw new Error('Incorrect Secret Passcode! You do not have permission to delete this template.');
+  }
+
+  const res = await fetch(`${FIRESTORE_TEMPLATES_URL}/${cleanId}`, {
+    method: 'DELETE'
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error?.message || `Firestore HTTP ${res.status}`);
+  }
+
+  return { success: true, docId: cleanId };
+}
+

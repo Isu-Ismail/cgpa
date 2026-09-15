@@ -348,7 +348,7 @@
 {#if isOpen}
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
     
-    <div class="neo-box-xl bg-[#FAF7EE] w-full max-w-4xl max-h-[90vh] flex flex-col my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150 relative">
+    <div class="neo-box-xl bg-[#FAF7EE] w-full max-w-4xl h-[82vh] min-h-[540px] max-h-[90vh] flex flex-col my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150 relative">
       
       <!-- Modal Header -->
       <div class="bg-[#38BDF8] border-b-3 border-black p-4 flex items-center justify-between">
