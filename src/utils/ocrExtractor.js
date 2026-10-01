@@ -1,5 +1,3 @@
-import { createWorker } from 'tesseract.js';
-
 /**
  * High-Precision Image Preprocessor
  * Enhances contrast and selectively inverts dark magenta grade boxes for student portal tables.
@@ -122,6 +120,7 @@ export async function scanMarksheetImage(imageFile, onProgress = () => {}) {
 
     onProgress({ status: 'loading-ocr', progress: 0.45, message: 'Loading neural OCR engine...' });
     
+    const { createWorker } = await import('tesseract.js');
     let worker;
     try {
       worker = await createWorker('eng');

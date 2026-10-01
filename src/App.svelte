@@ -19,7 +19,7 @@
   import TemplateEditorModal from "./components/TemplateEditorModal.svelte";
   import PasscodeAuthModal from "./components/PasscodeAuthModal.svelte";
   import { generatePdfReport } from "./utils/pdfGenerator.js";
-  import { fetchSingleCloudTemplate } from "./utils/firebaseService.js";
+  import { fetchSingleCloudTemplate, prewarmFirestore } from "./utils/firebaseService.js";
   import {
     Plus,
     ScanLine,
@@ -91,6 +91,19 @@
     } catch (e) {
       console.error("LocalStorage read error", e);
     }
+  });
+
+  // Start downloading the Firestore SDK + opening its connection in the background once the
+  // page has gone idle, so that cost isn't paid the first time the user actually opens the
+  // Templates modal. Falls back to a short timeout on browsers without requestIdleCallback.
+  $effect(() => {
+    const warm = () => prewarmFirestore();
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(warm, { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = setTimeout(warm, 2000);
+    return () => clearTimeout(id);
   });
 
   function handleWelcomeClose() {

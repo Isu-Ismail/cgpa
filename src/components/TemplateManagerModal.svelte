@@ -1,7 +1,7 @@
 <script>
   import { gpaStore } from '../store/gpaStore.js';
   import { templateStore } from '../store/templateStore.js';
-  import { fetchOnlineTemplates, publishCloudTemplate, checkTemplateIdExists } from '../utils/firebaseService.js';
+  import { fetchOnlineTemplates, fetchSingleCloudTemplate, publishCloudTemplate, checkTemplateIdExists } from '../utils/firebaseService.js';
   import ConfirmModal from './ConfirmModal.svelte';
   import { X, Search, Upload, Download, Trash2, Check, Copy, FolderCheck, FolderOpen, FileJson, Cloud, RefreshCw, Lock, ShieldCheck, Share2, Link, Sparkles, AlertTriangle, Edit3 } from 'lucide-svelte';
 
@@ -214,23 +214,25 @@
     }
   }
 
+  // Case-insensitive prefix match: matches if the query is a prefix of the whole field OR
+  // a prefix of any individual word in it (so "prod" matches "Production Engineering" even
+  // though the field starts with "Anna University"). Works for short and long queries alike.
+  function prefixMatch(fields, query) {
+    const q = (query || '').toLowerCase().trim();
+    if (!q) return true;
+    return fields.some(f => {
+      const text = (f || '').toLowerCase();
+      if (text.startsWith(q)) return true;
+      return text.split(/\s+/).some(word => word.startsWith(q));
+    });
+  }
+
   let filteredLocalTemplates = $derived(
-    $templateStore.filter(t => {
-      const q = searchQuery.toLowerCase().trim();
-      if (!q) return true;
-      return (t.name || '').toLowerCase().includes(q) ||
-             (t.id || '').toLowerCase().includes(q);
-    })
+    $templateStore.filter(t => prefixMatch([t.name, t.id], searchQuery))
   );
 
   let filteredOnlineTemplates = $derived(
-    onlineTemplates.filter(t => {
-      const q = searchQuery.toLowerCase().trim();
-      if (!q) return true;
-      return (t.name || '').toLowerCase().includes(q) ||
-             (t.docId || '').toLowerCase().includes(q) ||
-             (t.id || '').toLowerCase().includes(q);
-    })
+    onlineTemplates.filter(t => prefixMatch([t.name, t.docId, t.id, t.institution, t.branch], searchQuery))
   );
 
   function triggerToast(msg) {
@@ -288,6 +290,40 @@
   function promptLoadTemplate(tpl) {
     pendingLoadTpl = tpl;
     isLoadConfirmOpen = true;
+  }
+
+  // Online-template list cards only carry metadata (name/institution/counts) — the full
+  // semesters/courses schema is fetched on demand here, only for the one template actually
+  // being acted on, not parsed for every row while just browsing the list.
+  let fetchingFullTplDocId = $state(null);
+
+  async function promptLoadOnlineTemplate(tpl) {
+    fetchingFullTplDocId = tpl.docId;
+    try {
+      const full = await fetchSingleCloudTemplate(tpl.docId);
+      if (!full) {
+        triggerToast(`Template "${tpl.docId}" could not be loaded.`);
+        return;
+      }
+      promptLoadTemplate(full);
+    } finally {
+      fetchingFullTplDocId = null;
+    }
+  }
+
+  async function editOnlineTemplate(tpl) {
+    fetchingFullTplDocId = tpl.docId;
+    try {
+      const full = await fetchSingleCloudTemplate(tpl.docId);
+      if (!full) {
+        triggerToast(`Template "${tpl.docId}" could not be loaded.`);
+        return;
+      }
+      onClose();
+      onEditTemplate(full);
+    } finally {
+      fetchingFullTplDocId = null;
+    }
   }
 
   function confirmLoadTemplate() {
@@ -414,10 +450,9 @@
             <div class="relative flex-1 flex items-center">
               <Search class="w-5 h-5 text-black absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none" />
               <input 
-                type="text" 
-                placeholder="Search templates (e.g. au, pt, 2023, aupt202316)..." 
+                type="text"
+                placeholder="Search templates (e.g. au, pt, 2023, aupt202316)..."
                 bind:value={searchQuery}
-                oninput={loadOnlineTemplates}
                 class="neo-input !pl-10 pr-4 py-2.5 text-sm font-semibold"
                 style="padding-left: 2.5rem !important;"
               />
@@ -524,17 +559,19 @@
 
                   <!-- Action Button -->
                   <div class="pt-2 border-t-2 border-black/10 flex items-center gap-2">
-                    <button 
-                      onclick={() => promptLoadTemplate(tpl)}
-                      class="neo-btn bg-[#FFDE59] hover:bg-amber-400 text-black px-3 py-2 text-xs font-black flex-1 flex items-center justify-center gap-1.5 shadow-[1.5px_1.5px_0px_0px_#000]"
+                    <button
+                      onclick={() => promptLoadOnlineTemplate(tpl)}
+                      disabled={fetchingFullTplDocId === tpl.docId}
+                      class="neo-btn bg-[#FFDE59] hover:bg-amber-400 text-black px-3 py-2 text-xs font-black flex-1 flex items-center justify-center gap-1.5 shadow-[1.5px_1.5px_0px_0px_#000] disabled:opacity-60"
                     >
                       <FolderCheck class="w-4 h-4 text-black" />
-                      <span>Import & Apply</span>
+                      <span>{fetchingFullTplDocId === tpl.docId ? 'Loading...' : 'Import & Apply'}</span>
                     </button>
 
-                    <button 
-                      onclick={() => { onClose(); onEditTemplate(tpl); }}
-                      class="neo-btn bg-[#FF70A6] text-white hover:bg-pink-600 px-3 py-2 text-xs font-black flex items-center justify-center gap-1 shadow-[1.5px_1.5px_0px_0px_#000]"
+                    <button
+                      onclick={() => editOnlineTemplate(tpl)}
+                      disabled={fetchingFullTplDocId === tpl.docId}
+                      class="neo-btn bg-[#FF70A6] text-white hover:bg-pink-600 px-3 py-2 text-xs font-black flex items-center justify-center gap-1 shadow-[1.5px_1.5px_0px_0px_#000] disabled:opacity-60"
                       title="Edit template in studio mode without touching personal workspace"
                     >
                       <Edit3 class="w-3.5 h-3.5" />
