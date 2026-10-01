@@ -337,10 +337,10 @@
 </script>
 
 {#if isOpen}
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-    
-    <div class="neo-box-xl bg-[#FAF7EE] w-full max-w-4xl h-[82vh] min-h-[540px] max-h-[90vh] flex flex-col my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150 relative">
-      
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onclick={onClose} role="presentation">
+
+    <div class="neo-box-xl bg-[#FAF7EE] w-full max-w-4xl h-[82vh] min-h-[540px] max-h-[90vh] flex flex-col my-auto overflow-hidden relative" onclick={(e) => e.stopPropagation()} role="presentation">
+
       <!-- Modal Header -->
       <div class="bg-[#38BDF8] border-b-3 border-black p-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -363,43 +363,43 @@
 
       <!-- Action Toast Banner -->
       {#if actionToastMessage}
-        <div class="bg-[#4ADE80] border-b-2 border-black p-2 px-4 flex items-center gap-2 text-xs font-mono font-bold text-black animate-in fade-in slide-in-from-top-1 duration-150">
+        <div class="bg-[#4ADE80] border-b-2 border-black p-2 px-4 flex items-center gap-2 text-xs font-mono font-bold text-black">
           <Check class="w-4 h-4 text-black stroke-[3]" />
           <span>{actionToastMessage}</span>
         </div>
       {/if}
 
-      <!-- Tab Switcher -->
-      <div class="bg-[#FAF7EE] border-b-3 border-black px-4 pt-2.5 flex items-end gap-2 overflow-x-auto shrink-0">
+      <!-- Tab Switcher (horizontally scrollable on narrow/mobile viewports) -->
+      <div class="bg-[#FAF7EE] border-b-3 border-black px-4 pt-2.5 flex items-end gap-2 overflow-x-auto no-scrollbar shrink-0" style="overscroll-behavior: contain;">
         <!-- Tab 1: Online Templates -->
-        <button 
+        <button
           onclick={() => activeTab = 'online'}
-          class="px-3.5 py-2 text-xs font-mono font-black border-2 border-black -mb-[3px] transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 {activeTab === 'online' ? 'bg-[#FFDE59] shadow-[2px_-2px_0px_0px_#000] z-10' : 'bg-white hover:bg-zinc-100 text-black'}"
+          class="px-3.5 py-2 text-xs font-mono font-black border-2 border-black -mb-[3px] flex items-center gap-1.5 whitespace-nowrap shrink-0 {activeTab === 'online' ? 'bg-[#FFDE59] shadow-[2px_-2px_0px_0px_#000] z-10' : 'bg-white hover:bg-zinc-100 text-black'}"
         >
           <Cloud class="w-3.5 h-3.5 text-black" />
           <span>Online Templates ({onlineTemplates.length})</span>
         </button>
 
         <!-- Tab 2: Import JSON Backup -->
-        <button 
+        <button
           onclick={() => activeTab = 'import'}
-          class="px-3.5 py-2 text-xs font-mono font-black border-2 border-black -mb-[3px] transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 {activeTab === 'import' ? 'bg-[#FF70A6] text-white shadow-[2px_-2px_0px_0px_#000] z-10' : 'bg-white hover:bg-zinc-100 text-black'}"
+          class="px-3.5 py-2 text-xs font-mono font-black border-2 border-black -mb-[3px] flex items-center gap-1.5 whitespace-nowrap shrink-0 {activeTab === 'import' ? 'bg-[#FF70A6] text-white shadow-[2px_-2px_0px_0px_#000] z-10' : 'bg-white hover:bg-zinc-100 text-black'}"
         >
           <span>Import JSON Backup</span>
         </button>
 
         <!-- Tab 3: Export Data / Template -->
-        <button 
+        <button
           onclick={() => activeTab = 'export'}
-          class="px-3.5 py-2 text-xs font-mono font-black border-2 border-black -mb-[3px] transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 {activeTab === 'export' ? 'bg-[#86EFAC] text-black shadow-[2px_-2px_0px_0px_#000] z-10' : 'bg-white hover:bg-zinc-100 text-black'}"
+          class="px-3.5 py-2 text-xs font-mono font-black border-2 border-black -mb-[3px] flex items-center gap-1.5 whitespace-nowrap shrink-0 {activeTab === 'export' ? 'bg-[#86EFAC] text-black shadow-[2px_-2px_0px_0px_#000] z-10' : 'bg-white hover:bg-zinc-100 text-black'}"
         >
           <span>Export Data / Template</span>
         </button>
 
         <!-- Tab 4: Local Library -->
-        <button 
+        <button
           onclick={() => activeTab = 'library'}
-          class="px-3.5 py-2 text-xs font-mono font-black border-2 border-black -mb-[3px] transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 {activeTab === 'library' ? 'bg-[#38BDF8] text-black shadow-[2px_-2px_0px_0px_#000] z-10' : 'bg-white hover:bg-zinc-100 text-black'}"
+          class="px-3.5 py-2 text-xs font-mono font-black border-2 border-black -mb-[3px] flex items-center gap-1.5 whitespace-nowrap shrink-0 {activeTab === 'library' ? 'bg-[#38BDF8] text-black shadow-[2px_-2px_0px_0px_#000] z-10' : 'bg-white hover:bg-zinc-100 text-black'}"
         >
           <span>Local Library ({$templateStore.length})</span>
         </button>
@@ -457,7 +457,7 @@
                 {@const courseCount = tpl.coursesCount || (tpl.semesters || []).reduce((sum, s) => sum + (s.courses || []).length, 0)}
                 {@const docIdVal = tpl.docId || tpl.id}
 
-                <div class="neo-box bg-white p-4 flex flex-col justify-between space-y-3 hover:shadow-brutal-lg transition-shadow border-2">
+                <div class="neo-box bg-white p-4 flex flex-col justify-between space-y-3 border-2">
                   <div class="space-y-2">
                     
                     <!-- Card Top Row: Institution + Badge -->
@@ -570,7 +570,7 @@
 
               <!-- Published Share Result Banner -->
               {#if publishedShareResult}
-                <div class="neo-box bg-[#DCFCE7] p-4 border-2 border-black space-y-3 animate-in fade-in zoom-in-95">
+                <div class="neo-box bg-[#DCFCE7] p-4 border-2 border-black space-y-3">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2 font-mono text-xs font-black text-[#166534]">
                       <Sparkles class="w-4 h-4 text-green-700" />
@@ -823,7 +823,7 @@
             {:else}
               {#each filteredLocalTemplates as tpl (tpl.id)}
                 {@const localShareUrl = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}?tpl=${tpl.id}` : `?tpl=${tpl.id}`}
-                <div class="neo-box bg-white p-4 flex flex-col justify-between hover:shadow-brutal-lg transition-shadow">
+                <div class="neo-box bg-white p-4 flex flex-col justify-between">
                   <div>
                     <div class="flex items-start justify-between gap-2 mb-2">
                       <h4 class="font-display font-black text-base text-black">{tpl.name}</h4>

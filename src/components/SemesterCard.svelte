@@ -103,10 +103,10 @@
         <span class="text-black font-black">{(semester.totalQualityPoints || 0).toFixed(1)}</span>
       </div>
 
-      <!-- Semester Earned Credits Pill -->
-      <div class="flex items-center border-2 border-black bg-[#86EFAC] px-2 py-0.5 shadow-[1.5px_1.5px_0px_0px_#000] text-xs font-mono font-bold text-black shrink-0" title="Earned Credits for passed courses">
+      <!-- Semester Total Credits Pill (updates live as credits are typed, before any grade is entered) -->
+      <div class="flex items-center border-2 border-black bg-[#86EFAC] px-2 py-0.5 shadow-[1.5px_1.5px_0px_0px_#000] text-xs font-mono font-bold text-black shrink-0" title="Total credits entered for this semester">
         <span class="text-black/80 mr-1">Cred:</span>
-        <span class="text-black font-black">{semester.totalCredits || 0}</span>
+        <span class="text-black font-black">{semester.totalAllCredits || 0}</span>
       </div>
 
       <!-- Scan Marksheet for this Semester -->

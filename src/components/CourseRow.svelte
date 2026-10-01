@@ -33,8 +33,13 @@
   }
 
   function handleCreditsChange(e) {
-    const val = parseFloat(e.target.value);
-    gpaStore.updateCourse(semesterId, course.id, 'credits', isNaN(val) ? 0 : val);
+    const raw = e.target.value;
+    if (raw === '') {
+      gpaStore.updateCourse(semesterId, course.id, 'credits', '');
+      return;
+    }
+    const val = parseFloat(raw);
+    gpaStore.updateCourse(semesterId, course.id, 'credits', isNaN(val) ? '' : val);
   }
 
   function handleGradeChange(e) {

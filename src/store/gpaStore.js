@@ -136,9 +136,9 @@ function createGpaStore() {
           id: `sem-${Date.now().toString(36)}`,
           name: customName || `Semester ${semNum}`,
           courses: [
-            { id: `c-${Date.now()}-1`, code: '', name: '', credits: 3, grade: '' },
-            { id: `c-${Date.now()}-2`, code: '', name: '', credits: 3, grade: '' },
-            { id: `c-${Date.now()}-3`, code: '', name: '', credits: 3, grade: '' }
+            { id: `c-${Date.now()}-1`, code: '', name: '', credits: '', grade: '' },
+            { id: `c-${Date.now()}-2`, code: '', name: '', credits: '', grade: '' },
+            { id: `c-${Date.now()}-3`, code: '', name: '', credits: '', grade: '' }
           ]
         };
         return { ...state, semesters: [...state.semesters, newSem] };
@@ -168,7 +168,7 @@ function createGpaStore() {
           id: `c-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
           code: courseData.code || '',
           name: courseData.name || '',
-          credits: courseData.credits !== undefined ? courseData.credits : 3,
+          credits: courseData.credits !== undefined ? courseData.credits : '',
           grade: courseData.grade || ''
         };
 
@@ -191,7 +191,7 @@ function createGpaStore() {
           id: `c-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
           code: '',
           name: '',
-          credits: 3,
+          credits: '',
           grade: ''
         };
 

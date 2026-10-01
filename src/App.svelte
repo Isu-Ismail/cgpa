@@ -50,6 +50,17 @@
   let isPasscodeAuthOpen = $state(false);
   let templateToAuth = $state(null);
 
+  // Lock background page scroll while any modal is open — without this, scrolling inside a
+  // modal that hits its top/bottom edge chains into the page behind it (scroll chaining),
+  // which reads as stutter/flicker through the backdrop-blur layer.
+  let isAnyModalOpen = $derived(
+    isOcrOpen || isScaleOpen || isTemplatesOpen || isStartupTemplateOpen ||
+    isTargetOpen || isWelcomeOpen || isExportOpen || isTemplateEditorOpen || isPasscodeAuthOpen
+  );
+  $effect(() => {
+    document.body.style.overflow = isAnyModalOpen ? 'hidden' : '';
+  });
+
   function handleRequestEditTemplate(tpl = null) {
     if (!tpl) {
       templateToEdit = null;
@@ -215,8 +226,15 @@
 />
 
 <div
-  class="min-h-screen bg-retro-dots flex flex-col selection:bg-[#FFDE59] selection:text-black"
+  class="min-h-screen flex flex-col selection:bg-[#FFDE59] selection:text-black"
 >
+  <!-- Page content (header + main) is blurred while a modal is open, instead of blurring the
+       modal's own backdrop layer — this blur is a single instant toggle, not animated: CSS
+       can't cheaply composite a `filter: blur()` transition like it can transform/opacity, so
+       animating it over a large page repaints every intermediate frame and feels laggy. An
+       instant swap costs one paint and is done. `bg-retro-dots` lives on THIS wrapper (not the
+       outer root div) so the dotted background blurs along with the rest of the page. -->
+  <div class="min-h-screen bg-retro-dots flex flex-col flex-1 {isAnyModalOpen ? 'blur-md pointer-events-none' : ''}">
   <!-- Top Navigation Header -->
   <Header
     onOpenOcr={() => handleOpenOcr(null, null)}
@@ -366,8 +384,10 @@
       </div>
     </div>
   </main>
+  </div>
 
-  <!-- Modals -->
+  <!-- Modals (rendered outside the blurred page-content wrapper, so modal content itself
+       never gets blurred) -->
   <WelcomeModal isOpen={isWelcomeOpen} onClose={handleWelcomeClose} />
 
   <StartupTemplateModal

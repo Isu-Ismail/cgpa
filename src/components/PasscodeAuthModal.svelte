@@ -61,9 +61,9 @@
 </script>
 
 {#if isOpen && template}
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
-    
-    <div class="neo-box-lg bg-[#FAF7EE] w-full max-w-md p-6 relative space-y-4 animate-in fade-in zoom-in-95 duration-150">
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80" onclick={onClose} role="presentation">
+
+    <div class="neo-box-lg bg-[#FAF7EE] w-full max-w-md p-6 relative space-y-4" onclick={(e) => e.stopPropagation()} role="presentation">
       
       <!-- Header -->
       <div class="flex items-center justify-between border-b-2 border-black pb-3">

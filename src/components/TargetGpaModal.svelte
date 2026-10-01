@@ -167,9 +167,9 @@
 </script>
 
 {#if isOpen}
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-    
-    <div class="neo-box-xl bg-[#FAF7EE] w-full max-w-2xl max-h-[92vh] flex flex-col my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70" onclick={onClose} role="presentation">
+
+    <div class="neo-box-xl bg-[#FAF7EE] w-full max-w-2xl max-h-[92vh] flex flex-col my-auto overflow-hidden" onclick={(e) => e.stopPropagation()} role="presentation">
       
       <!-- Modal Header -->
       <div class="bg-[#C084FC] border-b-3 border-black p-4 flex items-center justify-between shrink-0">

@@ -47,6 +47,7 @@
           <div class="flex items-center gap-1 sm:gap-1.5">
             <h1 class="font-display font-black text-lg sm:text-2xl tracking-tight text-black flex items-center gap-1 group-hover:underline">
               Neo<span class="bg-[#FF8E3C] px-1 py-0.2 border border-black shadow-[1.5px_1.5px_0px_0px_#000] text-white">CGPA</span>
+              <span class="sr-only"> — Free Online CGPA & SGPA Calculator</span>
             </h1>
             <span class="neo-badge bg-[#86EFAC] text-black font-black text-[9px] sm:text-[10px] py-0 px-1">v2.0</span>
             <HelpCircle class="w-4 h-4 text-zinc-500 group-hover:text-black transition-colors" />

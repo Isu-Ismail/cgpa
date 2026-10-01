@@ -400,10 +400,14 @@
 
 {#if isOpen}
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs overflow-y-auto"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
+    onclick={onClose}
+    role="presentation"
   >
     <div
-      class="neo-box-xl bg-[#FAF7EE] w-full max-w-5xl h-[88vh] min-h-[580px] max-h-[92vh] flex flex-col my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150 relative"
+      class="neo-box-xl bg-[#FAF7EE] w-full max-w-5xl h-[88vh] min-h-[580px] max-h-[92vh] flex flex-col my-auto overflow-hidden relative"
+      onclick={(e) => e.stopPropagation()}
+      role="presentation"
     >
       <!-- Modal Header -->
       <div

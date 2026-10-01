@@ -27,14 +27,21 @@
 
 {#if isOpen}
   <!-- Backdrop -->
-  <div 
-    class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto animate-fade-in"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="export-modal-title"
+  <div
+    class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 overflow-y-auto"
+    role="presentation"
+    onclick={onClose}
   >
     <!-- Modal Container -->
-    <div class="neo-box bg-[#FAF7EE] w-full max-w-2xl overflow-hidden shadow-[8px_8px_0px_0px_#000] my-auto flex flex-col">
+    <div
+      class="neo-box bg-[#FAF7EE] w-full max-w-2xl overflow-hidden shadow-[8px_8px_0px_0px_#000] my-auto flex flex-col"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="export-modal-title"
+      tabindex="-1"
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
+    >
       
       <!-- Header Bar -->
       <div class="bg-[#4ADE80] border-b-3 border-black p-4 flex items-center justify-between">

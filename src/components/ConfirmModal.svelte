@@ -19,8 +19,8 @@
 </script>
 
 {#if isOpen}
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-    <div class="neo-box-xl bg-[#FAF7EE] w-full max-w-md flex flex-col my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 overflow-y-auto" onclick={onClose} role="presentation">
+    <div class="neo-box-xl bg-[#FAF7EE] w-full max-w-md flex flex-col my-auto overflow-hidden" onclick={(e) => e.stopPropagation()} role="presentation">
       
       <!-- Header Banner -->
       <div class="p-3.5 border-b-3 border-black flex items-center justify-between text-black 

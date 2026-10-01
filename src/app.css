@@ -111,6 +111,25 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+/* Home page keeps a small native rubber-band bounce at its own top/bottom edges, "contain"-ed
+   so it can never chain past itself (there's nothing above it to chain into anyway). Modal
+   bodies and inner lists behave the same way. */
+html, body {
+  overscroll-behavior: contain;
+}
+.overflow-y-auto {
+  overscroll-behavior: contain;
+}
+
+/* Hide the scrollbar on the home page itself — scrolling still works, just no visible track. */
+html, body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar, body::-webkit-scrollbar {
+  display: none;
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

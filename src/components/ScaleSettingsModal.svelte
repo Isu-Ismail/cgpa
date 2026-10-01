@@ -65,9 +65,9 @@
 
 {#if isOpen}
   <!-- Backdrop -->
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-    
-    <div class="neo-box-xl bg-[#FAF7EE] w-full max-w-2xl max-h-[90vh] flex flex-col my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onclick={onClose} role="presentation">
+
+    <div class="neo-box-xl bg-[#FAF7EE] w-full max-w-2xl max-h-[90vh] flex flex-col my-auto overflow-hidden" onclick={(e) => e.stopPropagation()} role="presentation">
       
       <!-- Modal Header -->
       <div class="bg-[#FFF4B8] border-b-3 border-black p-3.5 sm:p-4 flex items-center justify-between">
@@ -91,7 +91,7 @@
       </div>
 
       <!-- Modal Body (Smooth Scrolling) -->
-      <div class="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 scroll-smooth">
+      <div class="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
         
         <!-- Compact Max GPA Ceiling Box -->
         <div class="neo-box bg-white p-3 flex flex-wrap items-center justify-between gap-3">
