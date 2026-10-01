@@ -17,6 +17,9 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
+      - name: Add CNAME file
+        run: echo "cgpa.codism.in" > dist/CNAME
+
       - name: Publish dist folder to deploy branch
         uses: peaceiris/actions-gh-pages@v4
         with:
