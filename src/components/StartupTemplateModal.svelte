@@ -1,7 +1,7 @@
 <script>
   import { gpaStore } from '../store/gpaStore.js';
   import { templateStore } from '../store/templateStore.js';
-  import { fetchOnlineTemplates } from '../utils/firebaseService.js';
+  import { fetchOnlineTemplates, fetchSingleCloudTemplate } from '../utils/firebaseService.js';
   import { 
     X, FolderOpen, UploadCloud, Search, Sparkles, FileJson, 
     ArrowRight, Loader2, Plus, AlertCircle
@@ -123,12 +123,24 @@
     loadOnlineTemplates(activeSearchQuery);
   }
 
-  function handleSelectTemplate(template) {
+  // Online-template cards here only carry metadata (name/institution/counts) — the full
+  // semesters/courses schema is fetched on demand, only for the template actually selected.
+  let selectingDocId = $state(null);
+
+  async function handleSelectTemplate(template) {
+    selectingDocId = template.docId || template.id;
     try {
-      gpaStore.loadTemplate(template);
+      const full = await fetchSingleCloudTemplate(template.docId || template.id);
+      if (!full) {
+        errorMessage = `Template "${template.docId || template.id}" could not be loaded.`;
+        return;
+      }
+      gpaStore.loadTemplate(full);
       onClose();
     } catch (err) {
       errorMessage = err.message || 'Failed to load template';
+    } finally {
+      selectingDocId = null;
     }
   }
 
@@ -329,11 +341,12 @@
                   </div>
 
                   <!-- Use Template Button -->
-                  <button 
+                  <button
                     onclick={() => handleSelectTemplate(tpl)}
-                    class="neo-btn bg-[#86EFAC] hover:bg-[#4ADE80] text-black text-xs font-black py-2 w-full flex items-center justify-center gap-1.5 shadow-[1.5px_1.5px_0px_0px_#000]"
+                    disabled={selectingDocId === (tpl.docId || tpl.id)}
+                    class="neo-btn bg-[#86EFAC] hover:bg-[#4ADE80] text-black text-xs font-black py-2 w-full flex items-center justify-center gap-1.5 shadow-[1.5px_1.5px_0px_0px_#000] disabled:opacity-60"
                   >
-                    <span>Use Template</span>
+                    <span>{selectingDocId === (tpl.docId || tpl.id) ? 'Loading...' : 'Use Template'}</span>
                     <ArrowRight class="w-3.5 h-3.5 stroke-[3]" />
                   </button>
                 </div>
